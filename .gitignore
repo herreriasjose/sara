@@ -41,3 +41,6 @@ certs/
 data/*.json
 data/*.csv
 !data/templates/
+
+# Otros
+*.lnk
