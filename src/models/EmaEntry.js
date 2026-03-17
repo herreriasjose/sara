@@ -1,0 +1,1 @@
+// Esquema Mongoose: Entradas EMA

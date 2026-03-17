@@ -1,0 +1,1 @@
+{ "name": "sara-tfm-mvp", "version": "1.0.0", "type": "commonjs", "scripts": { "dev": "node --watch server.js", "test": "node --test" } }

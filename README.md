@@ -25,7 +25,7 @@ Para garantizar la eficiencia y el ahorro de recursos cognitivos del investigado
 4. **Seguridad RGPD**: Encriptación de datos sensibles y flujos de consentimiento informado digital.
 
 ## 📋 Requisitos e Instalación
-[cite_start]El proyecto es multiplataforma y requiere el uso de un gestor de versiones de Node para garantizar la paridad entre desarrollo (Windows 11) y producción (Linux/AWS ECS)[cite: 633, 634].
+[cite_start]El proyecto es multiplataforma y requiere el uso de un gestor de versiones de Node para garantizar la paridad entre desarrollo (Windows 11) y producción (Linux/AWS ECS).
 
 ### 1. Gestión del Entorno (Node.js v24.14.0 LTS)
 * **En Windows**: Utilizar `nvm-windows`.
