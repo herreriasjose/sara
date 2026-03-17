@@ -1,1 +1,19 @@
-{ "name": "sara-tfm-mvp", "version": "1.0.0", "type": "commonjs", "scripts": { "dev": "node --watch server.js", "test": "node --test" } }
+{
+  "name": "sara",
+  "version": "1.0.0",
+  "main": "server.js",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+ "scripts": {
+  "start": "node --env-file=.env server.js",
+  "dev": "node --env-file=.env.local --watch server.js",
+  "test": "node --env-file=.env.local --test tests/**/*.test.js",
+  "test:watch": "node --env-file=.env.local --test --watch tests/**/*.test.js"
+},
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2"
+  }
+}
