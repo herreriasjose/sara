@@ -39,7 +39,18 @@ Para garantizar la eficiencia y el ahorro de recursos cognitivos del investigado
     nvm use --lts
     ```
 
-### 2. Configuración del Proyecto
+## 2. Gestión de Datos y Seguridad (MongoDB Atlas)
+
+Se ha seleccionado **MongoDB Atlas** como servicio de base de datos gestionada en la nube para garantizar la integridad de los datos clínicos y la eficiencia del investigador. Esta decisión responde a criterios estratégicos de seguridad y ahorro de recursos cognitivos:
+
+* **Seguridad de Acceso**: El sistema implementa un control de acceso granular mediante **IP Whitelisting**, permitiendo únicamente conexiones desde el entorno de desarrollo (local) y el entorno de producción (AWS ECS).
+* **Cifrado de Datos**: Todas las comunicaciones entre el backend y la base de datos se realizan mediante túneles cifrados **TLS/SSL**. Los datos se encuentran cifrados tanto en tránsito como en reposo.
+* **Cumplimiento RGPD (GDPR)**: Al delegar la infraestructura en MongoDB Atlas, el proyecto se beneficia de centros de datos con certificaciones de seguridad internacionales, facilitando la auditoría del tratamiento de datos sensibles de pacientes.
+* **Paridad de Entornos**: El uso de una base de datos en la nube asegura que el comportamiento del sistema sea idéntico en **Windows 11** y **Linux/AWS**, eliminando el "trabajo sucio" de mantenimiento y configuración de servidores locales.
+* **Automatización de Backups**: Se garantiza la disponibilidad de los datos recogidos mediante la gestión automatizada del proveedor, protegiendo el avance de la investigación frente a fallos de hardware local.
+* **Control de Accesos (RBAC)**: Se utiliza el usuario `sara_app_user` con permisos restringidos de lectura/escritura para la operativa del backend, reservando el perfil de administrador para tareas de mantenimiento.
+
+### 3. Configuración del Proyecto
 1.  Clonar el repositorio.
 2.  Crear un archivo `.env` basado en `.env.example`.
 3.  Ejecutar `npm install`.
