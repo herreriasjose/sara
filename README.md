@@ -1,60 +1,46 @@
-
 # SARA (Sistema de Análisis y Resiliencia Auto-gestionado)
 
-## TFM-MVP: Detección de Descompensación Emocional mediante EMA y Modelado Bayesiano
+## TFM-MVP: Predicción de Descompensación Emocional mediante iAp y Modelado Bayesiano
 
-Este proyecto es el Producto Mínimo Viable (MVP) desarrollado para el Trabajo Fin de Máster (TFM) del **Máster Universitario en Psicología General Sanitaria (UNIR)**. El sistema combina técnicas de **Evaluación Ecológica Momentaria (EMA)** con inferencia estadística avanzada para la monitorización de pacientes con dolor crónico.
+Este proyecto representa el Producto Mínimo Viable (MVP) para el Trabajo Fin de Máster (TFM) del **Máster Universitario en Psicología General Sanitaria (UNIR)**. SARA trasciende la monitorización convencional al inscribirse en el marco de la **Psicología Artificial Intricada (iAp)**, combinando **Evaluación Ecológica Momentaria (EMA)** con computación avanzada para la gestión del dolor crónico.
 
-## 🧠 Marco de Investigación
-- **Objetivo**: Implementar un modelo bayesiano de regresión logística para predecir crisis emocionales en tiempo real basado en la intensidad del dolor, calidad del sueño y estado de ánimo.
-- **Población Diana**: Pacientes con dolor crónico y discapacidad física (en colaboración con asociaciones nacionales).
+## 🧠 Marco de Investigación (iAp Framework 2025)
+A diferencia de los modelos explicativos tradicionales, SARA se centra en la **precisión predictiva** (predictive accuracy) para anticipar crisis emocionales antes de que ocurran:
+
+* **Inferencia ante la Incertidumbre**: Implementación de **Modelado Bayesiano** para gestionar la vaguedad y pérdida de datos inherente al comportamiento humano.
+* **Análisis de Redes Psicológicas (PNA)**: El estado del paciente se modela como un sistema dinámico de variables interconectadas (dolor, sueño, hipervigilancia), permitiendo identificar nodos críticos de intervención.
+* **Lógica Difusa (Fuzzy Logic)**: Aplicación de **Mapas Cognitivos Difusos (FCM)** para traducir la subjetividad del dolor reportado por el paciente en valores computables de alta precisión.
 
 ## 🛠️ Stack Tecnológico
-Para garantizar la eficiencia y el ahorro de recursos cognitivos del investigador, la arquitectura está totalmente automatizada:
-- **Backend**: Node.js con Express.
-- **Frontend**: Motor de plantillas EJS (Optimizado para dispositivos móviles).
-- **Base de Datos**: MongoDB Atlas (Cloud).
-- **Comunicaciones**: Twilio for WhatsApp API (Automatización de muestreo EMA).
-- **Infraestructura**: AWS ECS sobre EC2 con Nginx como Proxy Inverso.
-- **Seguridad**: SSL/TLS
+Arquitectura diseñada para la máxima eficiencia y protección del balance alostático del investigador:
+
+* **Entorno**: Node.js v24.14.0 (LTS).
+* **Backend**: Express.js + Scripts integrados de **Python** para inferencia bayesiana.
+* **IA Generativa**: Integración de **LLM** para la generación semántica del Dashboard de Feedback, traduciendo datos estadísticos en pautas de autonomía para el paciente.
+* **Base de Datos**: **MongoDB Atlas** (Cloud) con control de acceso granular (IP Whitelisting) y cifrado TLS/SSL.
+* **Comunicaciones**: Twilio for WhatsApp API para la automatización del muestreo EMA.
+* **Infraestructura**: AWS ECS sobre EC2 con Nginx como Proxy Inverso.
 
 ## 🚀 Características Principales
-1. **Recogida Automatizada**: Programación de triggers vía WhatsApp para minimizar la fatiga del paciente.
-2. **Dashboard de Agencia**: Interfaz visual para que el paciente visualice su propia evolución (fomentando la autonomía y agencia).
-3. **Robustez Estadística**: Scripts integrados de R/Python para ejecutar el modelo bayesiano sobre los datos recolectados.
-4. **Seguridad RGPD**: Encriptación de datos sensibles y flujos de consentimiento informado digital.
+1.  **Recogida Automatizada**: Minimización de la fatiga del paciente mediante triggers inteligentes de WhatsApp.
+2.  **Dashboard de Agencia**: Interfaz visual que fomenta la **autonomía y agencia** del paciente mediante feedback descriptivo asistido por IA.
+3.  **Seguridad de Grado Clínico (RGPD)**: Cifrado en tránsito y reposo, gestión de consentimiento informado digital y anonimización de datos sensibles.
 
 ## 📋 Requisitos e Instalación
-[cite_start]El proyecto es multiplataforma y requiere el uso de un gestor de versiones de Node para garantizar la paridad entre desarrollo (Windows 11) y producción (Linux/AWS ECS).
+El proyecto garantiza la paridad de entornos entre **Windows 11** (desarrollo) y **Linux/AWS** (producción).
 
-### 1. Gestión del Entorno (Node.js v24.14.0 LTS)
-* **En Windows**: Utilizar `nvm-windows`.
+### 1. Gestión del Entorno
+* **Windows**: Instalar mediante `nvm-windows`.
     ```powershell
     nvm install 24.14.0
     nvm use 24.14.0
     ```
-* **En Linux**: Utilizar `nvm` (Node Version Manager).
-    ```bash
-    nvm install --lts
-    nvm use --lts
-    ```
+* **Linux**: Utilizar `nvm` estándar.
 
-## 2. Gestión de Datos y Seguridad (MongoDB Atlas)
-
-Se ha seleccionado **MongoDB Atlas** como servicio de base de datos gestionada en la nube para garantizar la integridad de los datos clínicos y la eficiencia del investigador. Esta decisión responde a criterios estratégicos de seguridad y ahorro de recursos cognitivos:
-
-* **Seguridad de Acceso**: El sistema implementa un control de acceso granular mediante **IP Whitelisting**, permitiendo únicamente conexiones desde el entorno de desarrollo (local) y el entorno de producción (AWS ECS).
-* **Cifrado de Datos**: Todas las comunicaciones entre el backend y la base de datos se realizan mediante túneles cifrados **TLS/SSL**. Los datos se encuentran cifrados tanto en tránsito como en reposo.
-* **Cumplimiento RGPD (GDPR)**: Al delegar la infraestructura en MongoDB Atlas, el proyecto se beneficia de centros de datos con certificaciones de seguridad internacionales, facilitando la auditoría del tratamiento de datos sensibles de pacientes.
-* **Paridad de Entornos**: El uso de una base de datos en la nube asegura que el comportamiento del sistema sea idéntico en **Windows 11** y **Linux/AWS**, eliminando el "trabajo sucio" de mantenimiento y configuración de servidores locales.
-* **Automatización de Backups**: Se garantiza la disponibilidad de los datos recogidos mediante la gestión automatizada del proveedor, protegiendo el avance de la investigación frente a fallos de hardware local.
-* **Control de Accesos (RBAC)**: Se utiliza el usuario `sara_app_user` con permisos restringidos de lectura/escritura para la operativa del backend, reservando el perfil de administrador para tareas de mantenimiento.
-
-### 3. Configuración del Proyecto
+### 2. Configuración Operativa
 1.  Clonar el repositorio.
-2.  Crear un archivo `.env` basado en `.env.example`.
-3.  Ejecutar `npm install`.
-4.  Iniciar en desarrollo: `npm run dev`.
+2.  Configurar el archivo `.env` siguiendo el `.env.example` (incluyendo `MONGO_URI` y credenciales de `Twilio`).
+3.  `npm install` && `npm run dev`.
 
 ## 👨‍💻 Investigador
-**Jose Herrerías Bongolán**
+**Jose Maria Herrerías Bongolan**  
