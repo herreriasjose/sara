@@ -41,9 +41,9 @@ module.exports = app;
 // INICIO DEL SERVIDOR:
 // Solo se ejecuta si el archivo es llamado directamente (npm start / npm run dev)
 if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
         console.log(`\n🚀 SARA en ejecución: http://localhost:${PORT}`);
         console.log(`📡 Entorno: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`🧠 Memoria optimizada para: Investigador Senior\n`);
     });
 }

@@ -6,7 +6,7 @@ jspm_packages/
 .env
 .env.test
 .env.production
-.env.local
+.env.dev
 
 # Logs
 logs

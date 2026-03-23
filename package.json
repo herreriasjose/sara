@@ -5,15 +5,19 @@
   "engines": {
     "node": ">=24.14.0"
   },
- "scripts": {
-  "start": "node --env-file=.env server.js",
-  "dev": "node --env-file=.env.local --watch server.js",
-  "test": "node --env-file=.env.local --test tests/**/*.test.js",
-  "test:watch": "node --env-file=.env.local --test --watch tests/**/*.test.js"
+  "scripts": {
+  "start": "cross-env NODE_ENV=production node --env-file=.env server.js",
+  "dev": "cross-env NODE_ENV=development node --env-file=.env.dev --watch server.js",
+  "test": "cross-env NODE_ENV=test node --env-file=.env.test --test tests/**/*.test.js",
+  "test:watch": "cross-env NODE_ENV=test node --env-file=.env.test --test --watch tests/**/*.test.js"
 },
   "dependencies": {
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "mongoose": "^9.3.2"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }
