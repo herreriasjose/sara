@@ -43,5 +43,6 @@ data/*.csv
 !data/templates/
 
 # Otros
+documents/
 *.lnk
 structure_project.txt
