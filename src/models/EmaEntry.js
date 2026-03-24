@@ -22,11 +22,11 @@ const EmaEntrySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Middleware para marcar datos de baja calidad (ej. respuesta < 1s o > 60s)
-EmaEntrySchema.pre('save', function(next) {
+// Usamos async sin el parámetro next para evitar el error de Mongoose 9+
+EmaEntrySchema.pre('save', async function() {
   if (this.type === 'active' && (this.responseTimeMs < 1000 || this.responseTimeMs > 60000)) {
     this.isHighQuality = false;
   }
-  next();
 });
 
 module.exports = mongoose.model('EmaEntry', EmaEntrySchema);

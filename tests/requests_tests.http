@@ -1,0 +1,33 @@
+### Estos tests se ejecutan con la extensión REST Client (Huachao Mao)
+
+### Variables (Asegúrate de que el puerto coincide con tu .env.dev)
+@baseUrl = http://localhost:3000/api
+
+### 0. Healthcheck del Servidor
+GET {{baseUrl}}/ping
+Accept: application/json
+
+### 1. Registrar un Paciente (Power User)
+POST {{baseUrl}}/patients
+Content-Type: application/json
+Accept: application/json
+
+{
+  "externalId": "USR-WA-001",
+  "disabilityGrade": 69,
+  "isQuotaParticipant": true,
+  "consentAccepted": true
+}
+
+### 2. Enviar Micro-Evaluación EMA (Regla 20s)
+POST {{baseUrl}}/ema
+Content-Type: application/json
+Accept: application/json
+
+{
+  "externalId": "USR-WA-001",
+  "energy": 4,
+  "tension": 8,
+  "clarity": 5,
+  "responseTimeMs": 14500
+}

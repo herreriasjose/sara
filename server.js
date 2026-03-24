@@ -1,49 +1,35 @@
-/**
- * SARA - Sistema de Análisis y Resiliencia Auto-gestionado
- * Principal Server Entry Point (Node.js v24 LTS)
- */
-
+// server.js
 const express = require('express');
-const path = require('path');
+const connectDB = require('./src/config/db'); // 1. Importamos la conexión
+const apiRoutes = require('./src/routes/api');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// 1. Configuración del Motor de Vistas (EJS)
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'src', 'views'));
+// 2. Conectamos a MongoDB SOLO si no estamos en entorno de testing 
+// (Porque los tests ya se conectan por su cuenta)
+if (process.env.NODE_ENV !== 'test') {
+    connectDB();
+}
 
-// 2. Middlewares Globales
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 3. EL SALVAVIDAS: Middleware para parsear JSON
+app.use(express.json()); 
 
-// 3. Rutas de la Aplicación
+// 4. Montamos las rutas en el prefijo /api
+app.use('/api', apiRoutes);
+
+// Dashboard MVP (Opcional)
 app.get('/', (req, res) => {
-    res.render('pages/index', { 
-        title: 'SARA | Inicio',
-        stage: 'Fase 1: MVP - TFM'
-    });
+    res.send('<!DOCTYPE html><html><body><h1>SARA Dashboard MVP</h1></body></html>');
 });
 
-// 4. Manejo de Errores (404)
-app.use((req, res) => {
-    res.status(404).render('pages/index', { 
-        title: '404 - No encontrado',
-        stage: 'Error'
-    });
-});
-
-// EXPORTACIÓN PARA TESTING:
-// Permite que el test runner levante la app en puertos efímeros.
+// 5. Exportamos la app "desnuda" para los tests
 module.exports = app;
 
-// INICIO DEL SERVIDOR:
-// Solo se ejecuta si el archivo es llamado directamente (npm start / npm run dev)
+// 6. Levantamos el servidor
 if (require.main === module) {
+    // Leemos el puerto desde el .env.dev (3000) o usamos 3000 por defecto
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-        console.log(`\n🚀 SARA en ejecución: http://localhost:${PORT}`);
-        console.log(`📡 Entorno: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`SARA operativa y a la escucha en el puerto ${PORT} ⚡`);
     });
 }
