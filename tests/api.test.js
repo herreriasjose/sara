@@ -3,7 +3,7 @@ const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
 const mongoose = require('mongoose');
-const app = require('../server');
+const app = require('../src/server');
 
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;

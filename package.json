@@ -6,8 +6,8 @@
     "node": ">=24.14.0"
   },
   "scripts": {
-  "start": "cross-env NODE_ENV=production node --env-file=.env server.js",
-  "dev": "cross-env NODE_ENV=development node --env-file=.env.dev --watch server.js",
+  "start": "cross-env NODE_ENV=production node --env-file=.env src/server.js",
+  "dev": "cross-env NODE_ENV=development node --env-file=.env.dev --watch src/server.js",
   "test": "cross-env NODE_ENV=test node --env-file=.env.test --test --test-concurrency=1 tests/**/*.test.js",
   "test:watch": "cross-env NODE_ENV=test node --env-file=.env.test --test-concurrency=1 --test --watch tests/**/*.test.js"
 },

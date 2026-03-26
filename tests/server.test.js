@@ -2,7 +2,7 @@ const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert');
 const { createServer } = require('node:http');
 const mongoose = require('mongoose'); // Importación necesaria
-const app = require('../server'); 
+const app = require('../src/server'); 
 
 describe('Suite de Pruebas: Disponibilidad de SARA (MVP)', () => {
     let server;
