@@ -1,47 +1,36 @@
-# SARA (Sistema de Acompañamiento y Resiliencia Alostática)
+# SARA: Sistema de Acompañamiento y Resiliencia Alostática
+### Infraestructura de Predicción de Burnout mediante Micro-Validación y Computación Bayesiana
 
-## TFM-MVP: Predicción de Burnout mediante Modelado de Carga Alostática e IA
-**Enfoque: Evaluación Ecológica Momentaria (EMA) de Ultra-Baja Fricción**
+SARA es una arquitectura de **Evaluación Ecológica Momentaria (EMA)** de alto rendimiento diseñada para la detección precoz de la claudicación del cuidador familiar. El sistema opera bajo un paradigma de **analítica predictiva**, identificando la degradación de la resiliencia antes de que se produzca un fallo sistémico en el entorno de cuidados.
 
-SARA es un Producto Mínimo Viable (MVP) desarrollado para el **Trabajo Fin de Máster (UNIR)** y proyectado como base tecnológica para un **Doctorado Industrial (2027)**. El sistema evoluciona de la monitorización reactiva a la analítica predictiva del **agotamiento**, actuando como un "seguro de continuidad" en entornos de alta demanda de cuidados y dolor crónico.
+## 🧠 Marco Científico: El Modelo de Carga Alostática
+SARA operacionaliza la monitorización del estrés basándose en la **Teoría de la Carga Alostática (Bruce McEwen)**, sustituyendo los cuestionarios retrospectivos por datos en tiempo real con alta validez ecológica.
 
-## 🧠 Marco de Investigación (ERP & Digital Twin 2026)
-SARA se fundamenta en el **Energy Resistance Principle (ERP)**: el colapso ocurre cuando el gasto energético en gestionar el estrés (carga alostática) compite con los procesos de reparación biológica.
+* **Energy Resistance Principle (ERP):** Modelado dinámico que entiende el agotamiento como un déficit energético. El sistema detecta cuando la *Tensión* acumulada supera sistemáticamente la capacidad de *Recuperación* del organismo.
+* **Actualización Bayesiana:** El motor matemático calcula la probabilidad de burnout en tiempo real mediante la integración de evidencias diarias y conocimiento clínico previo.
+* **Intervenciones JITAI:** Sincronización de micro-apoyos y recursos de regulación justo en el momento (Just-In-Time) de mayor vulnerabilidad detectada.
 
-* **Gemelo Digital (CDT)**: Modelado de la trayectoria de fatiga para simular puntos de ruptura.
-* **Inferencia Bayesiana**: Uso de algoritmos para actualizar la probabilidad de burnout en tiempo real $$P(H|E)$$.
-* **JITAI (Just-In-Time Adaptive Interventions)**: Micro-intervenciones de apoyo en momentos de alta receptividad.
+## 🛠️ Arquitectura del Sistema (Dual-Stack)
+La infraestructura está diseñada para garantizar la máxima resiliencia y el mínimo mantenimiento, operando de forma desacoplada mediante el gestor de procesos **PM2**.
 
-## 🛠️ Stack Tecnológico: Arquitectura "Conversational Hub"
-Diseñada para la **invisibilidad operativa** y la **máxima adherencia**, eliminando la fricción de instalación de aplicaciones nativas:
+### 1. SARA-Gateway (Node.js v24 LTS)
+Encargado de la infraestructura de comunicaciones y persistencia.
+* **Conversational Hub:** Orquestación de notificaciones a través de la API de WhatsApp.
+* **Privacy-First Frontend:** Renderizado de micro-formularios **EJS** optimizados para la "Regla de los 20 segundos".
+* **Persistencia:** Gestión de trayectorias y sistemas de adherencia (Streaks) en **MongoDB Atlas**.
 
-* **Canal de Interacción**: **WhatsApp Business API (Twilio)** para notificaciones y triggers.
-* **Frontend de Captura**: Micro-formularios web (20 seg) servidos con **Node.js + EJS**.
-* **Backend**: **Node.js v24 LTS** + Express.js.
-* **Motor Predictivo**: Scripts de **Python** para procesado de modelos estadísticos.
-* **Base de Datos**: **MongoDB Atlas** (Almacenamiento de fenotipos digitales).
-* **Infraestructura**: AWS (Cumplimiento de RGPD y seguridad de datos de salud).
+### 2. SARA-Brain (FastAPI / Python 3.13)
+Encargado de los cálculos.
+* **Cómputo Probabilístico:** Implementación de modelos estadísticos avanzados con **SciPy**.
+* **Contrato de Datos:** Validación estricta mediante modelos **Pydantic** para asegurar la integridad de las variables clínicas.
+* **Motor Analítico:** Generación de métricas sobre la trayectoria de fatiga y carga alostática acumulada.
 
-## 🚀 Protocolo de Captura de "Fricción Cero" (20-Second Rule)
-Para preservar los recursos cognitivos del usuario, SARA opera bajo un modelo de **interacción asíncrona**:
+## 🔒 Protocolo de Privacidad y Soberanía del Dato
+SARA implementa una arquitectura de **"Caja Negra"** para proteger la sensibilidad de los datos de salud frente a plataformas de terceros:
+1.  **Canal de Notificación (WhatsApp):** Utilizado exclusivamente para el envío de links efímeros tokenizados. Meta no tiene visibilidad sobre el estado emocional del usuario.
+2.  **Túnel de Captura (EJS/HTTPS):** Las respuestas a las micro-validaciones viajan por un túnel cifrado propietario directamente a la base de datos de investigación.
+3.  **Anonimización:** Uso de tokens HMAC para desacoplar la identidad del usuario de sus registros de salud en tránsito.
 
-1.  **Trigger Inteligente (Node-Cron)**: El sistema decide el momento óptimo de evaluación según el perfil del usuario.
-2.  **Notificación Outbound**: Envío de link personalizado vía WhatsApp. Sin logins, sin contraseñas (Tokens efímeros).
-3.  **Validación Activa (20s)**:
-    * **Micro-Escalas**: Una sola pregunta de impacto (0-10) sobre energía/dolor/estrés.
-    * **Filtro de Ruido**: Validación subjetiva para calibrar el modelo predictivo.
-4.  **Bucle de Refuerzo (Incentivo Inmediato)**: Tras el envío, SARA devuelve automáticamente:
-    * **Feedback Visual**: Gráfica de tendencia de resiliencia semanal.
-    * **EMI (Intervención)**: Un "Micro-Tip" de salud o técnica de regulación vagal basada en la respuesta actual.
-
-
-
-## 🎯 Estrategia de Muestreo y Ética
-* **Cribado Automatizado**: Filtro inicial de participantes mediante criterios de inclusión clínicos y tecnológicos.
-* **Protección de Datos**: Anonimización de registros en MongoDB y cifrado de extremo a extremo en las comunicaciones de captación.
-* **Hito Académico**: El sistema permite recolectar un N de alta calidad con un *attrition rate* mínimo, facilitando la defensa de la validez externa en el TFM.
-
-## 👨‍💻 Investigador
-**Jose María Herrerías** *Psicólogo General Sanitario & Principal Software Architect*
-
- 
+## 🚀 Estado del Proyecto y Validación
+El sistema se encuentra en fase de validación técnica, priorizando la estabilidad del puente entre los servicios de Node.js y Python.
+* **Objetivo:** Alcanzar una adherencia superior al 80% en estudios longitudinales gracias a la eliminación de fricción en la captura de datos.
