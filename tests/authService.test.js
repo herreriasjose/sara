@@ -11,8 +11,9 @@ describe('Servicio de Autenticación (Tokens Efímeros)', () => {
     const token = authService.generateEmaToken(mockPatientId);
     assert.ok(token);
     assert.strictEqual(typeof token, 'string');
-    // El formato base64url no debe contener +, / o =
-    assert.match(token, /^[a-zA-Z0-0_-]+$/);
+    
+    // Corregido: [a-zA-Z0-9_-] para permitir todos los números
+    assert.match(token, /^[a-zA-Z0-9_-]+$/, 'El token debe ser URL-safe');
   });
 
   it('Debe verificar un token válido y recuperar el patientId original', () => {
