@@ -4,27 +4,22 @@ const mongoose = require('mongoose');
 
 const EmaEntrySchema = new mongoose.Schema({
   patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  type: { 
-    type: String, 
-    enum: ['passive', 'active'], // Protocolo 90/10
-    required: true 
-  },
-  // Datos Psicométricos (Solo si es 'active')
+  
+  // Datos Psicométricos (Alineados con McEwen y ERP)
   metrics: {
-    energy: { type: Number, min: 0, max: 10 },
-    tension: { type: Number, min: 0, max: 10 },
-    clarity: { type: Number, min: 0, max: 10 }
+    energy: { type: Number, min: 1, max: 5, required: true },   // Batería (1-5)
+    tension: { type: Number, min: 1, max: 3, required: true },  // Agobio (1-3)
+    clarity: { type: Number, min: 1, max: 3, required: true }   // Mente (1-3)
   },
-  // Datos de Calidad
-  responseTimeMs: { type: Number }, // Control "Regla de los 20s"
-  isHighQuality: { type: Boolean, default: true },
-  metadata: { type: Map, of: String } // Para acelerómetro o screen-time
+  
+  // Control de calidad y fatiga cognitiva
+  responseTimeMs: { type: Number }, 
+  isHighQuality: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Middleware para marcar datos de baja calidad (ej. respuesta < 1s o > 60s)
-// Usamos async sin el parámetro next para evitar el error de Mongoose 9+
+// Middleware ajustado: < 2s es "click" impulsivo, > 45s es distracción
 EmaEntrySchema.pre('save', async function() {
-  if (this.type === 'active' && (this.responseTimeMs < 1000 || this.responseTimeMs > 60000)) {
+  if (this.responseTimeMs < 2000 || this.responseTimeMs > 45000) {
     this.isHighQuality = false;
   }
 });
