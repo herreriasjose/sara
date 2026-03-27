@@ -10,7 +10,7 @@ describe('Suite de Pruebas: Disponibilidad de SARA (MVP)', () => {
 
     before(async () => {
         // 1. Aseguramos conexión a la DB de TEST antes de levantar el server
-        // Esto garantiza que los modelos de 'Patient' y 'EmaEntry' estén listos
+        // Esto garantiza que los modelos de 'Caretaker' y 'EmaEntry' estén listos
         if (mongoose.connection.readyState === 0) {
             await mongoose.connect(process.env.MONGO_URI);
         }

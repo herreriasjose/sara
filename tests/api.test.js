@@ -8,9 +8,8 @@ const app = require('../src/server');
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;
     let baseUrl;
-    const testPatientId = 'WA-TEST-PHONES-01';
+    const testCaretakerId = 'WA-TEST-PHONES-01';
     
-    // 1. Definimos el token que el middleware espera recibir
     const API_KEY = process.env.SARA_API_KEY || 'sara_dev_token_2026';
 
     before(async () => {
@@ -34,16 +33,20 @@ describe('API Endpoints (Sincronización SARA)', () => {
         }
     });
 
-    test('1. POST /patients -> Registro exitoso', async () => {
-        const res = await fetch(`${baseUrl}/patients`, {
+    test('1. POST /caretakers -> Registro exitoso', async () => {
+        // CORRECCIÓN: Ruta actualizada y campo 'name' incluido
+        const res = await fetch(`${baseUrl}/caretakers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                externalId: testPatientId,
-                consentAccepted: true
+                externalId: testCaretakerId,
+                name: 'Jose Test Investigator',
+                consentAccepted: true,
+                patientDisabilityGrade: 75,
+                caretakerDisabilityGrade: 69
             })
         });
-        assert.strictEqual(res.status, 201);
+        assert.strictEqual(res.status, 201, 'El registro debe ser exitoso con los nuevos campos');
     });
 
     test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
@@ -51,19 +54,18 @@ describe('API Endpoints (Sincronización SARA)', () => {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'x-api-key': API_KEY // <--- 2. Pasamos el token en la cabecera
+                'x-api-key': API_KEY 
             },
             body: JSON.stringify({
-                externalId: testPatientId,
-                energy: 4,     // 1-5
-                tension: 2,    // 1-3
-                clarity: 3,    // 1-3
+                externalId: testCaretakerId,
+                energy: 4,
+                tension: 2,
+                clarity: 3,
                 responseTimeMs: 12000
             })
         });
         
-        assert.strictEqual(res.status, 201, 'Ahora devuelve 201 porque los datos son válidos y la petición está autorizada');
-        
+        assert.strictEqual(res.status, 201, 'Guardado EMA autorizado y válido');
         const data = await res.json();
         assert.strictEqual(data.streak, 1);
     });

@@ -1,29 +1,31 @@
 // src/routes/api.js
 
+// src/routes/api.js
 const express = require('express');
 const router = express.Router();
 const emaController = require('../controllers/emaController');
 
-// 1. Importación de Middlewares (El "Blindaje Ético")
-// Asumimos que estos archivos existen en tu carpeta src/middlewares/
+// Middlewares de protección
 const validateRgpd = require('../middlewares/validateRgpd');
 const requireAuth = require('../middlewares/requireAuth');
 
-// 2. Healthcheck (Optimizado para el Load Balancer de AWS)
+/**
+ * Rutas Públicas / Healthcheck
+ */
 router.get('/ping', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
-        service: 'SARA-Gateway',
-        timestamp: new Date().toISOString() 
-    });
+    res.status(200).json({ status: 'ok', service: 'SARA-Gateway', node: process.version });
 });
 
-// 3. Rutas Core (JITAI & EMA)
+/**
+ * Registro de Participantes
+ * Protegido por validación de consentimiento RGPD
+ */
+router.post('/caretakers', validateRgpd, emaController.registerCaretaker);
 
-// Ruta de Registro: Pasa por el filtro RGPD estricto antes del controlador
-router.post('/patients', validateRgpd, emaController.registerPatient);
-
-// Ruta EMA: Protegida mediante token efímero (o validación de origen de WhatsApp)
+/**
+ * Captura de Datos EMA
+ * Protegido por Token Efímero (Auth)
+ */
 router.post('/ema', requireAuth, emaController.submitEma);
 
 module.exports = router;

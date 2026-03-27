@@ -17,7 +17,7 @@ router.post('/r/:token', async (req, res) => {
     const prediction = await brainClient.getBurnoutPrediction({ energy, tension, clarity });
 
     // 3. Actualizar paciente (Rachas y Probabilidad)
-    await Patient.findByIdAndUpdate(patientId, {
+    await Caretaker.findByIdAndUpdate(patientId, {
         $inc: { streakCount: 1 },
         lastBurnoutProbability: prediction?.probability || 0,
         lastInteractionAt: new Date()

@@ -1,32 +1,43 @@
 <!-- src\views\pages\index.ejs -->
 
 <%- include('../layouts/main', { body: `
-    <div class="hero-section text-center rounded-3 shadow-sm p-5">
+    <div class="hero-section text-center rounded-3 shadow-sm p-5 bg-white">
         <h1 class="display-4 fw-bold">Detección de Descompensación Emocional</h1>
-        <p class="lead">Sistema EMA para el monitoreo de pacientes con dolor crónico.</p>
+        <p class="lead">Sistema SARA: Acompañamiento Bayesiano para el Cuidador.</p>
         <hr class="my-4">
-        <div class="row text-start mt-4">
+        
+        <div class="row text-start mt-4 g-4">
             <div class="col-md-6">
-                <div class="card h-100 border-primary">
+                <div class="card h-100 border-primary shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-primary">Estado del MVP</h5>
-                        <p class="card-text">Motor de plantillas EJS configurado. Node.js v24 activo.</p>
-                        <span class="badge bg-success">Online</span>
+                        <h5 class="card-title text-primary">Operaciones de Campo</h5>
+                        <p class="card-text small text-muted">Gestión de participantes y pruebas de captura EMA.</p>
+                        <div class="d-grid gap-2">
+                            <a href="/register" class="btn btn-outline-primary btn-sm">Alta Cuidador (Público)</a>
+                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa (Investigador)</a>
+                            <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
+                        </div>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-6">
-                <div class="card h-100">
+                <div class="card h-100 shadow-sm border-0 bg-light">
                     <div class="card-body">
-                        <h5 class="card-title">Aviso Ético (RGPD)</h5>
-                        <p class="card-text text-muted small">Este sistema está diseñado para la recogida de datos anónimos bajo consentimiento informado digital.</p>
-                        <button class="btn btn-outline-secondary btn-sm" disabled>Ver Consentimiento</button>
+                        <h5 class="card-title">Estatus Técnico</h5>
+                        <ul class="list-unstyled small">
+                            <li><span class="badge bg-success me-2">Online</span> Node.js v24 Gateway</li>
+                            <li><span class="badge bg-secondary me-2">Model</span> Caretaker (Active)</li>
+                            <li><span class="badge bg-info me-2">RGPD</span> Middleware Activo</li>
+                        </ul>
+                        <p class="card-text text-muted small mt-3">Base de Datos: MongoDB Atlas conectada con éxito.</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="mt-5">
-            <p class="text-muted">Próximo hito: Configuración de MongoDB Atlas y Esquema de Paciente.</p>
+
+        <div class="mt-5 pt-4">
+            <p class="text-muted small">Hacia el Doctorado 2027 | Pilotaje: Sept-Dic 2026</p>
         </div>
     </div>
 ` }) %>

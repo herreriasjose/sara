@@ -53,6 +53,17 @@ app.get('/', (req, res) => {
     });
 });
 
+// Registro por el propio cuidador (Self-signup)
+app.get('/register', (req, res) => {
+    res.render('pages/register-caretaker', { title: 'Alta de Cuidador' });
+});
+
+// Registro por parte del Administrador/Investigador
+app.get('/admin/register', (req, res) => {
+    res.render('pages/admin-register-caretaker', { title: 'Panel de Control - Registro' });
+});
+
+
 // 7. Endpoint formulario prueba
 app.get('/test-ema', (req, res) => {
     res.render('pages/ema', { title: 'SARA - Test de Evaluación' });

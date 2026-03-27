@@ -1,9 +1,9 @@
 // src/controllers/whatsappController.js
 const authService = require('../services/authService');
-const Patient = require('../models/Patient');
+const Caretaker = require('../models/Caretaker');
 
 exports.sendDailyPrompt = async (patientExternalId) => {
-    const patient = await Patient.findOne({ externalId: patientExternalId });
+    const patient = await Caretaker.findOne({ externalId: patientExternalId });
     if (!patient) return;
 
     const token = authService.generateEmaToken(patient._id);

@@ -1,9 +1,9 @@
-// tests\db.test.js
+// tests/db.test.js
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
 
-const Patient = require('../src/models/Patient');
+const Caretaker = require('../src/models/Caretaker');
 const EmaEntry = require('../src/models/EmaEntry');
 
 describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
@@ -22,27 +22,32 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
     }
   });
 
-  describe('Patient Model', () => {
-    let savedPatientId;
+  describe('Caretaker Model', () => {
+    let savedCaretakerId;
 
-    it('1. Debe crear un Paciente con externalId anónimo', async () => {
-      const patient = new Patient({ 
+    it('1. Debe crear un Cuidador con datos completos', async () => {
+      // CORRECCIÓN: Se añade 'name' que es obligatorio
+      const caretaker = new Caretaker({ 
           externalId: 'USR-2026-TEST-01', 
+          name: 'Cuidador de Prueba',
           consentAccepted: true,
-          disabilityGrade: 69
+          caretakerDisabilityGrade: 69,
+          patientDisabilityGrade: 80
       });
-      const savedPatient = await patient.save();
-      savedPatientId = savedPatient._id;
+      const savedCaretaker = await caretaker.save();
+      savedCaretakerId = savedCaretaker._id;
       
-      assert.ok(savedPatient._id);
-      assert.strictEqual(savedPatient.streakCount, 0);
+      assert.ok(savedCaretaker._id);
+      assert.strictEqual(savedCaretaker.name, 'Cuidador de Prueba');
     });
 
     it('2. Debe actualizar racha y probabilidad burnout', async () => {
-      const patient = await Patient.findById(savedPatientId);
-      patient.streakCount += 1;
-      patient.lastBurnoutProbability = 0.45;
-      const updated = await patient.save();
+      const caretaker = await Caretaker.findById(savedCaretakerId);
+      assert.notStrictEqual(caretaker, null, 'El cuidador debe existir en la BD');
+      
+      caretaker.streakCount += 1;
+      caretaker.lastBurnoutProbability = 0.45;
+      const updated = await caretaker.save();
       
       assert.strictEqual(updated.streakCount, 1);
       assert.strictEqual(updated.lastBurnoutProbability, 0.45);
@@ -50,18 +55,23 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
   });
 
   describe('EmaEntry Model (Alineado con McEwen)', () => {
-    let testPatientId;
+    let testCaretakerId;
 
     before(async () => {
-        const p = new Patient({ externalId: 'USR-EMA-FIX', consentAccepted: true });
-        const savedP = await p.save();
-        testPatientId = savedP._id;
+        // CORRECCIÓN: Se añade 'name' en el hook de preparación
+        const c = new Caretaker({ 
+            externalId: 'USR-EMA-FIX', 
+            name: 'Caretaker EMA Test',
+            consentAccepted: true 
+        });
+        const savedC = await c.save();
+        testCaretakerId = savedC._id;
     });
 
     it('1. Debe registrar entrada con rangos corregidos (1-5, 1-3, 1-3)', async () => {
         const entry = new EmaEntry({
-            patientId: testPatientId,
-            metrics: { energy: 4, tension: 2, clarity: 3 }, // Valores dentro de rango
+            patientId: testCaretakerId,
+            metrics: { energy: 4, tension: 2, clarity: 3 },
             responseTimeMs: 15000 
         });
         const savedEntry = await entry.save();
@@ -71,22 +81,22 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
 
     it('2. Debe marcar isHighQuality=false si responseTime < 2s', async () => {
         const fastEntry = new EmaEntry({
-            patientId: testPatientId,
+            patientId: testCaretakerId,
             metrics: { energy: 3, tension: 1, clarity: 2 },
             responseTimeMs: 500 
         });
         const saved = await fastEntry.save();
-        assert.strictEqual(saved.isHighQuality, false, '500ms es demasiado rápido');
+        assert.strictEqual(saved.isHighQuality, false);
     });
 
     it('3. Debe fallar si los valores exceden los límites de McEwen (Tension > 3)', async () => {
         const entry = new EmaEntry({
-            patientId: testPatientId,
-            metrics: { energy: 5, tension: 10, clarity: 1 } // Tension 10 ya no es válida
+            patientId: testCaretakerId,
+            metrics: { energy: 5, tension: 10, clarity: 1 }
         });
         try {
             await entry.save();
-            assert.fail('Debería haber fallado por validación');
+            assert.fail('Debería haber fallado por validación de rango');
         } catch (error) {
             assert.ok(error.errors['metrics.tension']);
         }

@@ -3,7 +3,7 @@
 const mongoose = require('mongoose');
 
 const EmaEntrySchema = new mongoose.Schema({
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Caretaker', required: true },
   
   // Datos Psicométricos (Alineados con McEwen y ERP)
   metrics: {
