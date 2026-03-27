@@ -1,70 +1,89 @@
-// src\controllers\emaController.js
-
+// src/controllers/emaController.js
 
 const Patient = require('../models/Patient');
 const EmaEntry = require('../models/EmaEntry');
+const brainClient = require('../services/brainClient'); // <-- 1. Importamos el puente con Python
 
 // 1. Registrar un nuevo participante (Power User)
 exports.registerPatient = async (req, res) => {
     try {
-        const { externalId, disabilityGrade, isQuotaParticipant, consentAccepted } = req.body;
+        const { externalId, disabilityGrade, consentAccepted } = req.body;
 
-        // Validamos que haya aceptado el consentimiento
+        // Privacidad por Diseño: Sin consentimiento no hay registro
         if (!consentAccepted) {
-            return res.status(400).json({ error: 'El consentimiento explícito es obligatorio.' });
+            return res.status(400).json({ error: 'El consentimiento explícito es obligatorio (RGPD).' });
         }
 
         const newPatient = new Patient({
             externalId,
             disabilityGrade,
-            isQuotaParticipant,
             consentAccepted,
-            consentDate: new Date()
+            // Inicializamos la probabilidad a priori en 10% por defecto (puedes ajustarlo según literatura)
+            lastBurnoutProbability: 0.1 
         });
 
         const savedPatient = await newPatient.save();
         res.status(201).json({ message: 'Paciente registrado con éxito', patient: savedPatient });
+        
     } catch (error) {
-        // Manejo de error si el externalId ya existe
         if (error.code === 11000) {
             return res.status(409).json({ error: 'El paciente ya está registrado.' });
         }
-        res.status(500).json({ error: 'Error interno del servidor', details: error.message });
+        console.error('Error en registerPatient:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
-// 2. Recibir Evaluación EMA (Validación Activa de 20s)
+// 2. Recibir Evaluación EMA y Calcular Riesgo
 exports.submitEma = async (req, res) => {
     try {
         const { externalId, energy, tension, clarity, responseTimeMs } = req.body;
 
-        // 1. Buscamos al paciente por su ID externo (ej. su número de WhatsApp hasheado)
+        // 1. Identificación ultrarrápida (Índice en MongoDB)
         const patient = await Patient.findOne({ externalId });
         if (!patient) {
             return res.status(404).json({ error: 'Paciente no encontrado.' });
         }
 
-        // 2. Guardamos la entrada EMA
+        const metrics = { energy, tension, clarity };
+
+        // 2. Guardamos la entrada EMA (El middleware pre-save validará isHighQuality)
         const entry = new EmaEntry({
             patientId: patient._id,
-            type: 'active',
-            metrics: { energy, tension, clarity },
+            metrics,
             responseTimeMs
         });
         await entry.save();
 
-        // 3. Incrementamos la Racha (Gamificación Duolingo)
+        // 3. INFERENCIA BAYESIANA (Llamada al microservicio de Python)
+        // Pasamos las métricas actuales y la memoria del paciente P(H)
+        const prediction = await brainClient.getBurnoutPrediction(metrics, patient.lastBurnoutProbability);
+
+        // 4. Actualizamos el estado del paciente (Gamificación + Riesgo)
         patient.streakCount += 1;
+        patient.lastInteractionAt = new Date();
+        
+        // Si Python responde correctamente, actualizamos la caché de riesgo
+        if (prediction && prediction.burnout_probability !== undefined) {
+            patient.lastBurnoutProbability = prediction.burnout_probability;
+        }
         await patient.save();
 
-        // 4. Devolvemos el feedback inmediato
+        // 5. Evaluamos si es necesaria una Intervención JITAI (Contingencia)
+        // Umbral crítico arbitrario para el MVP: 80% de probabilidad de claudicación
+        const requiresIntervention = patient.lastBurnoutProbability >= 0.8;
+
+        // 6. Feedback al cliente/WhatsApp
         res.status(201).json({ 
             message: 'Evaluación registrada correctamente',
             streak: patient.streakCount,
-            isHighQuality: entry.isHighQuality 
+            isHighQuality: entry.isHighQuality,
+            currentBurnoutRisk: patient.lastBurnoutProbability,
+            requiresIntervention
         });
 
     } catch (error) {
-        res.status(500).json({ error: 'Error al procesar la evaluación', details: error.message });
+        console.error('Error crítico en submitEma:', error);
+        res.status(500).json({ error: 'Error al procesar la evaluación' });
     }
 };

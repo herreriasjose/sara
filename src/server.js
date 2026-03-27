@@ -1,9 +1,11 @@
+// src/server.js
+
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 
-// 1. Interceptor Nativo de Logs (Subimos un nivel porque server.js ahora está en /src)
+// 1. Interceptor Nativo de Logs
 const logDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
 
@@ -26,21 +28,37 @@ console.error = function (...args) {
 // 2. Inicialización de Express
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Útil para procesar los micro-formularios
 
-// 3. Importación de Rutas
+// 3. Configuración del Motor de Vistas (EJS) y Estáticos
+app.set('view engine', 'ejs');
+// Asumimos que la carpeta views está dentro de src/ (src/views/)
+app.set('views', path.join(__dirname, 'views')); 
+// Asumimos que tienes una carpeta public/ en la raíz del proyecto para tus CSS puros o assets
+app.use(express.static(path.join(__dirname, '../public'))); 
+
+// 4. Importación de Rutas
 const adminRoutes = require('./routes/admin');
-const apiRoutes = require('./routes/api'); // <-- 1. Importamos tu archivo de rutas
+const apiRoutes = require('./routes/api');
 
-// 4. Registro de Rutas
+// 5. Registro de Rutas
 app.use('/api/admin', adminRoutes);
-app.use('/api', apiRoutes); // <-- 2. Conectamos el cable. Ahora /api/patients y /api/ema existen.
+app.use('/api', apiRoutes);
 
-// Endpoint básico para tests de disponibilidad
+// 6. Endpoint de la Landing Page (EJS)
 app.get('/', (req, res) => {
-    res.send('<!DOCTYPE html><html><body><h1>SARA Dashboard MVP</h1></body></html>');
+    // Añadimos 'pages/' al path del renderizado
+    res.render('pages/index', { 
+        title: 'SARA - Sistema de Acompañamiento y Resiliencia Alostática'
+    });
 });
 
-// 5. Arranque del Servidor
+// 7. Endpoint formulario prueba
+app.get('/test-ema', (req, res) => {
+    res.render('pages/ema', { title: 'SARA - Test de Evaluación' });
+});
+
+// 7. Arranque del Servidor
 if (require.main === module) {
     const PORT = process.env.PORT || 3000;
     const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/sara_dev';

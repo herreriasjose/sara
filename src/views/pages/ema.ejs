@@ -1,0 +1,74 @@
+<%- include('../layouts/main', { body: `
+    <div class="container mt-4" style="max-width: 500px;">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h2 class="h4 mb-4 text-center">Registro SARA</h2>
+                
+                <form id="emaForm" action="/api/ema" method="POST">
+                    <input type="hidden" name="externalId" value="WA-TEST-01">
+                    <input type="hidden" name="responseTimeMs" id="responseTimeMs">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">1. ¿Cuánta energía tienes ahora?</label>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Baja</span>
+                            <span class="small text-muted">Alta</span>
+                        </div>
+                        <input type="range" class="form-range custom-slider" name="energy" min="1" max="5" step="1" id="energyRange">
+                        <div class="text-center fw-bold text-primary" id="energyVal">3</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">2. Nivel de agobio/tensión:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tension" id="t1" value="1" required>
+                            <label class="btn btn-outline-success" for="t1">Calma</label>
+
+                            <input type="radio" class="btn-check" name="tension" id="t2" value="2" checked>
+                            <label class="btn btn-outline-warning" for="t2">Normal</label>
+
+                            <input type="radio" class="btn-check" name="tension" id="t3" value="3">
+                            <label class="btn btn-outline-danger" for="t3">Límite</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">3. ¿Tu mente está clara?</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="clarity" id="c1" value="1" required>
+                            <label class="btn btn-outline-danger" for="c1">Niebla</label>
+
+                            <input type="radio" class="btn-check" name="clarity" id="c2" value="2" checked>
+                            <label class="btn btn-outline-secondary" for="c2">Difusa</label>
+
+                            <input type="radio" class="btn-check" name="clarity" id="c3" value="3">
+                            <label class="btn btn-outline-primary" for="c3">Clara</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm mt-3">
+                        Enviar Registro
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lógica de cronometría para el TFM (responseTimeMs)
+        const startTime = Date.now();
+        const energySlider = document.getElementById('energyRange');
+        const energyDisp = document.getElementById('energyVal');
+
+        energySlider.oninput = function() { energyDisp.innerHTML = this.value; }
+
+        document.getElementById('emaForm').onsubmit = function() {
+            document.getElementById('responseTimeMs').value = Date.now() - startTime;
+        };
+    </script>
+
+    <style>
+        .custom-slider { height: 2.5rem; }
+        .btn-group .btn { padding: 1rem 0.5rem; font-weight: bold; }
+    </style>
+` }) %>

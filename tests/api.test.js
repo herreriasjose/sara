@@ -1,4 +1,4 @@
-// tests\api.test.js
+// tests/api.test.js
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
@@ -9,6 +9,9 @@ describe('API Endpoints (Sincronización SARA)', () => {
     let server;
     let baseUrl;
     const testPatientId = 'WA-TEST-PHONES-01';
+    
+    // 1. Definimos el token que el middleware espera recibir
+    const API_KEY = process.env.SARA_API_KEY || 'sara_dev_token_2026';
 
     before(async () => {
         if (mongoose.connection.readyState === 0) {
@@ -46,7 +49,10 @@ describe('API Endpoints (Sincronización SARA)', () => {
     test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
         const res = await fetch(`${baseUrl}/ema`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY // <--- 2. Pasamos el token en la cabecera
+            },
             body: JSON.stringify({
                 externalId: testPatientId,
                 energy: 4,     // 1-5
@@ -55,9 +61,10 @@ describe('API Endpoints (Sincronización SARA)', () => {
                 responseTimeMs: 12000
             })
         });
-        const data = await res.json();
         
-        assert.strictEqual(res.status, 201, 'Ahora devuelve 201 porque los datos son válidos');
+        assert.strictEqual(res.status, 201, 'Ahora devuelve 201 porque los datos son válidos y la petición está autorizada');
+        
+        const data = await res.json();
         assert.strictEqual(data.streak, 1);
     });
 });
