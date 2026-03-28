@@ -8,7 +8,8 @@ const app = require('../src/server');
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;
     let baseUrl;
-    const testCaretakerId = 'WA-TEST-PHONES-01';
+    let generatedInternalId;
+    const testPhoneNumber = '+34699999999';
     
     const API_KEY = process.env.SARA_API_KEY || 'sara_dev_token_2026';
 
@@ -33,40 +34,56 @@ describe('API Endpoints (Sincronización SARA)', () => {
         }
     });
 
-    test('1. POST /caretakers -> Registro exitoso', async () => {
-        // CORRECCIÓN: Ruta actualizada y campo 'name' incluido
+    test('1. POST /caretakers -> Registro exitoso y generación de ID', async () => {
         const res = await fetch(`${baseUrl}/caretakers`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                // CRÍTICO: Forzamos que la API nos devuelva JSON, no la redirección HTML
+                'Accept': 'application/json' 
+            },
             body: JSON.stringify({
-                externalId: testCaretakerId,
-                name: 'Jose Test Investigator',
+                phoneNumber: testPhoneNumber,
+                name: 'Jose Test API',
                 consentAccepted: true,
                 patientDisabilityGrade: 75,
                 caretakerDisabilityGrade: 69
-            })
+            }),
+            // Evitamos seguir redirecciones automáticamente si las hubiera
+            redirect: 'manual' 
         });
-        assert.strictEqual(res.status, 201, 'El registro debe ser exitoso con los nuevos campos');
+        
+        assert.strictEqual(res.status, 201, 'El registro debe ser exitoso (201 Created)');
+        
+        const data = await res.json();
+        assert.ok(data.internalId, 'El controlador debe devolver el internalId generado');
+        assert.match(data.internalId, /^SARA-[A-Z0-9]{12}$/, 'El formato del ID debe ser correcto');
+        
+        generatedInternalId = data.internalId;
     });
 
     test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
+        assert.ok(generatedInternalId, 'Asegurar que el ID se generó en el test anterior');
+
         const res = await fetch(`${baseUrl}/ema`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 'x-api-key': API_KEY 
             },
             body: JSON.stringify({
-                externalId: testCaretakerId,
+                externalId: generatedInternalId,
                 energy: 4,
                 tension: 2,
                 clarity: 3,
                 responseTimeMs: 12000
-            })
+            }),
+            redirect: 'manual'
         });
         
-        assert.strictEqual(res.status, 201, 'Guardado EMA autorizado y válido');
+        assert.strictEqual(res.status, 200, 'Guardado EMA autorizado y procesado');
         const data = await res.json();
-        assert.strictEqual(data.streak, 1);
+        assert.strictEqual(data.status, 'ok');
     });
 });

@@ -6,7 +6,7 @@
             <h2 class="h4 text-center mb-3">Únete a SARA</h2>
             <p class="text-muted small text-center mb-4">Configura tu perfil de acompañamiento personalizado.</p>
             
-            <form action="/api/patients" method="POST">
+            <form action="/api/caretakers" method="POST">
                 <div class="mb-4">
                     <h6 class="fw-bold border-bottom pb-2">Identificación</h6>
                     <div class="row g-3">
@@ -16,11 +16,11 @@
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small">Código Postal</label>
-                            <input type="text" name="postalCode" class="form-control" placeholder="28001">
+                            <input type="text" name="postalCode" class="form-control" placeholder="28001" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small">WhatsApp (ID de acceso)</label>
-                            <input type="text" name="externalId" class="form-control" placeholder="WA-6XXXXXXXX" required>
+                            <label class="form-label small">Teléfono Móvil (WhatsApp)</label>
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="+34 600 123 456" required>
                         </div>
                     </div>
                 </div>
@@ -30,7 +30,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small">Vínculo con el familiar</label>
-                            <select name="relationship" class="form-select">
+                            <select name="relationship" class="form-select" required>
                                 <option value="child">Hijo/a</option>
                                 <option value="spouse">Cónyuge / Pareja</option>
                                 <option value="sibling">Hermano/a</option>
@@ -39,8 +39,8 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small">Años cuidando</label>
-                            <input type="number" name="yearsCaregiving" class="form-control" min="0">
+                            <label class="form-label small">Años cuidando (aproximadamente)</label>
+                            <input type="number" name="yearsCaregiving" class="form-control" min="0" required>
                         </div>
                     </div>
                     <div class="row g-3">

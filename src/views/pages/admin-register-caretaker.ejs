@@ -14,7 +14,7 @@
             <h5 class="mb-0">Registro Manual de Cuidador (Modo Investigador)</h5>
         </div>
         <div class="card-body p-4">
-            <form action="/api/patients" method="POST">
+            <form action="/api/caretakers" method="POST">
                 <input type="hidden" name="consentAccepted" value="true">
 
                 <div class="row">
@@ -25,8 +25,8 @@
                             <input type="text" name="name" class="form-control" placeholder="Juan Pérez" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">WhatsApp ID (Principal)</label>
-                            <input type="text" name="externalId" class="form-control" placeholder="WA-346XXXXXXXX" required>
+                            <label class="form-label small fw-bold">Teléfono Móvil (WhatsApp)</label>
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="+34600123456" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Teléfono Alternativo / Fijo</label>

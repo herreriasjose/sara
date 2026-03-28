@@ -7,7 +7,7 @@ const CaretakerSchema = new mongoose.Schema({
     email: { type: String, sparse: true }, // sparse permite que sea opcional pero indexado
     phoneAlt: { type: String },
     postalCode: { type: String },
-    
+    phoneReal: { type: String, required: true, unique: true }, // Teléfono real para la API de WhatsApp
     // Perfil del Cuidador (Variables Moderadoras para el TFM)
     age: { type: Number },
     relationship: { type: String, enum: ['spouse', 'child', 'sibling', 'other', 'professional'] },

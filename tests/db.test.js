@@ -26,10 +26,10 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
     let savedCaretakerId;
 
     it('1. Debe crear un Cuidador con datos completos', async () => {
-      // CORRECCIÓN: Se añade 'name' que es obligatorio
       const caretaker = new Caretaker({ 
-          externalId: 'USR-2026-TEST-01', 
-          name: 'Cuidador de Prueba',
+          externalId: 'SARA-TEST-DB-01', 
+          phoneReal: '+34600000000', // NUEVO CAMPO REQUERIDO
+          name: 'Cuidador de Prueba DB',
           consentAccepted: true,
           caretakerDisabilityGrade: 69,
           patientDisabilityGrade: 80
@@ -38,7 +38,8 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
       savedCaretakerId = savedCaretaker._id;
       
       assert.ok(savedCaretaker._id);
-      assert.strictEqual(savedCaretaker.name, 'Cuidador de Prueba');
+      assert.strictEqual(savedCaretaker.name, 'Cuidador de Prueba DB');
+      assert.strictEqual(savedCaretaker.phoneReal, '+34600000000');
     });
 
     it('2. Debe actualizar racha y probabilidad burnout', async () => {
@@ -58,9 +59,9 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
     let testCaretakerId;
 
     before(async () => {
-        // CORRECCIÓN: Se añade 'name' en el hook de preparación
         const c = new Caretaker({ 
-            externalId: 'USR-EMA-FIX', 
+            externalId: 'SARA-EMA-FIX', 
+            phoneReal: '+34611111111', // NUEVO CAMPO REQUERIDO
             name: 'Caretaker EMA Test',
             consentAccepted: true 
         });
