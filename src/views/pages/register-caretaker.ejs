@@ -1,36 +1,75 @@
 <!-- src\views\pages\register-caretaker.ejs -->
+
 <%- include('../layouts/main', { body: `
-<div class="container mt-4" style="max-width: 600px;">
+<div class="container mt-4" style="max-width: 650px;">
     <div class="card shadow-sm border-0">
         <div class="card-body p-4">
-            <h2 class="h4 text-center mb-3">Únete a SARA</h2>
-            <p class="text-muted small text-center mb-4">Configura tu perfil de acompañamiento personalizado.</p>
+            <div class="text-center mb-4">
+                <h2 class="h4 fw-bold">Únete a SARA</h2>
+                <p class="text-muted small">Configura tu perfil de acompañamiento y resiliencia en menos de 2 minutos.</p>
+            </div>
             
             <form action="/api/caretakers" method="POST">
+                
                 <div class="mb-4">
-                    <h6 class="fw-bold border-bottom pb-2">Identificación</h6>
+                    <h6 class="fw-bold border-bottom pb-2 text-primary">1. Tu Perfil</h6>
                     <div class="row g-3">
-                        <div class="col-md-7">
-                            <label class="form-label small">Nombre o Alias</label>
-                            <input type="text" name="name" class="form-control" placeholder="Tu nombre" required>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold">Nombre o Alias</label>
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Tu nombre" maxlength="100" required>
                         </div>
-                        <div class="col-md-5">
-                            <label class="form-label small">Código Postal</label>
-                            <input type="text" name="postalCode" class="form-control" placeholder="28001" required>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Código Postal</label>
+                            <input type="text" name="postalCode" class="form-control form-control-sm" placeholder="28001" pattern="^[0-9]{5}$" maxlength="5" title="Debe ser un código postal válido de 5 dígitos numéricos." required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Tu Edad</label>
+                            <input type="number" name="age" class="form-control form-control-sm" min="10" max="110" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Tu Sexo</label>
+                            <select name="gender" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
+                                <option value="female">Mujer</option>
+                                <option value="male">Hombre</option>
+                                <option value="other">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Tu Discapacidad (%)</label>
+                            <input type="number" name="caretakerDisabilityGrade" class="form-control form-control-sm" value="0" min="0" max="100">
                         </div>
                         <div class="col-12">
-                            <label class="form-label small">Teléfono Móvil (WhatsApp)</label>
-                            <input type="tel" name="phoneNumber" class="form-control" placeholder="+34 600 123 456" required>
+                            <label class="form-label small fw-bold">Teléfono Móvil (WhatsApp)</label>
+                            <input type="tel" name="phoneNumber" class="form-control form-control-sm" placeholder="+34 600 000 000" pattern="^\\+?[0-9\\s\\-]{9,15}$" title="Debe contener entre 9 y 15 dígitos. Puede incluir el prefijo internacional (+)." required>
+                            <div class="form-text" style="font-size: 0.7rem;">Usaremos este número exclusivamente para enviarte los micro-formularios diarios.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <h6 class="fw-bold border-bottom pb-2">Contexto del Cuidado</h6>
+                <div class="mb-4 p-3 bg-light rounded shadow-sm">
+                    <h6 class="fw-bold border-bottom pb-2 text-primary">2. La Persona que Cuidas</h6>
                     <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Edad Paciente</label>
+                            <input type="number" name="patientAge" class="form-control form-control-sm" min="10" max="110" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Sexo Paciente</label>
+                            <select name="patientGender" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
+                                <option value="female">Mujer</option>
+                                <option value="male">Hombre</option>
+                                <option value="other">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Discapacidad %</label>
+                            <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" placeholder="Ej: 75" min="0" max="100" required>
+                        </div>
                         <div class="col-md-6">
-                            <label class="form-label small">Vínculo con el familiar</label>
-                            <select name="relationship" class="form-select" required>
+                            <label class="form-label small fw-bold">Vínculo familiar</label>
+                            <select name="relationship" class="form-select form-select-sm" required>
                                 <option value="child">Hijo/a</option>
                                 <option value="spouse">Cónyuge / Pareja</option>
                                 <option value="sibling">Hermano/a</option>
@@ -39,45 +78,58 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small">Años cuidando (aproximadamente)</label>
-                            <input type="number" name="yearsCaregiving" class="form-control" min="0" required>
-                        </div>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Discapacidad de la persona que cuidas (%)</label>
-                            <input type="number" name="patientDisabilityGrade" class="form-control" placeholder="Ej: 75" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Tu grado de discapacidad, si tienes (%)</label>
-                            <input type="number" name="caretakerDisabilityGrade" class="form-control" value="0">
+                            <label class="form-label small fw-bold">Años cuidando</label>
+                            <input type="number" name="yearsCaregiving" class="form-control form-control-sm" min="0" max="100" required>
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <h6 class="fw-bold border-bottom pb-2">Contacto de Respaldo</h6>
-                    <input type="email" name="email" class="form-control mb-2" placeholder="Email (opcional)">
-                    <div class="card bg-light border-0 mt-3">
+                    <h6 class="fw-bold border-bottom pb-2 text-primary">3. Contexto de Carga</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Tipo de Carga Principal</label>
+                            <select name="burdenType" class="form-select form-select-sm" required>
+                                <option value="physical">Física (Movilidad, aseo...)</option>
+                                <option value="cognitive">Cognitiva (Demencia, conducta...)</option>
+                                <option value="mixed">Mixta (Ambas por igual)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">¿Tienes apoyo externo?</label>
+                            <select name="hasExternalSupport" class="form-select form-select-sm" required>
+                                <option value="true">Sí (Ayuda familiar o profesional)</option>
+                                <option value="false">No (Cuido en soledad)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="card border-warning bg-light">
                         <div class="card-body py-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="consentAccepted" value="true" id="rgpd" required>
                                 <label class="form-check-label small fw-bold" for="rgpd">
-                                    He leído y acepto el consentimiento informado.
+                                    Acepto el consentimiento informado.
                                 </label>
-                                <div class="form-text mt-1" style="font-size: 0.75rem;">
-                                    Tus datos serán tratados de forma confidencial para fines exclusivos de investigación académica y soporte emocional.
+                                <div class="form-text" style="font-size: 0.7rem;">
+                                    Tus datos serán cifrados y utilizados exclusivamente para el estudio SARA sobre resiliencia alostática (TFM/Doctorado).
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">
+                <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">
                     Comenzar Acompañamiento
                 </button>
+                
+                <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.75rem;">
+                    SARA System v1.0 | Privacidad por Diseño (SHA-256)
+                </p>
             </form>
         </div>
     </div>
-</div>
-` }) %>
+    </div>
+    ` }) %>

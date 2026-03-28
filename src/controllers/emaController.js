@@ -1,9 +1,10 @@
 // src/controllers/emaController.js
 
-const Caretaker = require('../models/Caretaker');
 const EmaEntry = require('../models/EmaEntry');
 const crypto = require('crypto');
 const brainClient = require('../services/brainClient'); // Puente con FastAPI
+const Caretaker = require('../models/Caretaker');
+const authService = require('../services/authService');
 
 /**
  * Motor de Privacidad: Generación de ID Interno Determinista
@@ -26,71 +27,27 @@ function generateInternalId(phoneNumber) {
  */
 exports.registerCaretaker = async (req, res) => {
     try {
-        const {
-            phoneNumber,
-            name,
-            email,
-            phoneAlt,
-            postalCode,
-            age,
+        const { phoneNumber, relationship, hasExternalSupport, ...rest } = req.body;
+
+        const caretakerData = {
+            ...rest,
+            phoneReal: phoneNumber,
             relationship,
-            yearsCaregiving,
-            patientDisabilityGrade,
-            caretakerDisabilityGrade,
-            consentAccepted
-        } = req.body;
+            // Normalización de checkbox/string a booleano
+            hasExternalSupport: hasExternalSupport === 'true' || hasExternalSupport === true,
+            externalId: authService.hashPhoneNumber(phoneNumber),
+            isProfessional: relationship === 'professional'
+        };
 
-        // 1. Validación de Fricción Cero
-        if (!phoneNumber || !name) {
-            return res.status(400).json({ error: 'El nombre y el teléfono son obligatorios para iniciar el acompañamiento.' });
-        }
-
-        // 2. Blindaje Ético: Generación del Token
-        const internalId = generateInternalId(phoneNumber);
-
-        // 3. Persistencia del Modelo Enriquecido
-        const newCaretaker = new Caretaker({
-            externalId: internalId,
-            phoneReal: phoneNumber, // Crítico: Se guarda para que el cron pueda enviar el mensaje de WhatsApp
-            name,
-            email,
-            phoneAlt,
-            postalCode,
-            age: age ? parseInt(age) : undefined,
-            relationship,
-            yearsCaregiving: yearsCaregiving ? parseInt(yearsCaregiving) : 0,
-            patientDisabilityGrade: patientDisabilityGrade ? parseInt(patientDisabilityGrade) : 0,
-            caretakerDisabilityGrade: caretakerDisabilityGrade ? parseInt(caretakerDisabilityGrade) : 0,
-            consentAccepted: consentAccepted === 'true' || consentAccepted === true
-        });
-
-        await newCaretaker.save();
-
-        // 4. Orquestación Híbrida de la Respuesta
+        const newCaretaker = await Caretaker.create(caretakerData);
+        
         if (req.accepts('html')) {
-            // Interfaz EJS: Redirigimos al dashboard indicando el éxito
-            return res.redirect('/?success=registered');
-        } else {
-            // Consumo por API pura
-            return res.status(201).json({
-                message: 'Cuidador registrado y blindado con éxito.',
-                internalId: internalId
-            });
+            return res.render('pages/index', { success: true, message: 'Registro de Díada completado.' });
         }
 
+        res.status(201).json({ status: 'success', data: { id: newCaretaker.externalId } });
     } catch (error) {
-        console.error('[Gateway] Error crítico en registro de cuidador:', error);
-
-        // Gestión elegante de duplicados (MongoDB Error 11000)
-        if (error.code === 11000) {
-            const message = 'Este número de teléfono ya está participando en el estudio SARA.';
-            if (req.accepts('html')) {
-                return res.redirect(`/?error=duplicate`);
-            }
-            return res.status(409).json({ error: message });
-        }
-
-        res.status(500).json({ error: 'Fallo sistémico en la orquestación del alta.' });
+        res.status(400).json({ status: 'error', message: error.message });
     }
 };
 
@@ -131,14 +88,17 @@ exports.submitEma = async (req, res) => {
         // Se ejecuta sin bloquear el hilo principal para mantener tiempos de respuesta de milisegundos.
         try {
             // Llamada al microservicio en Python (SARA-Brain)
-            const prediction = await brainClient.predictBurnout({
+            const prediction = await brainClient.getBurnoutPrediction({
                 metrics: newEma.metrics,
                 priorProbability: caretaker.lastBurnoutProbability,
-                caretakerContext: {
-                    age: caretaker.age,
-                    caregivingYears: caretaker.yearsCaregiving,
-                    burden: caretaker.patientDisabilityGrade,
-                    capacity: caretaker.caretakerDisabilityGrade
+                context: {
+                    caregiver: { age: caretaker.age, gender: caretaker.gender },
+                    patient: { age: caretaker.patientAge, gender: caretaker.patientGender },
+                    dynamics: { 
+                        years: caretaker.yearsCaregiving, 
+                        burden: caretaker.burdenType, 
+                        support: caretaker.hasExternalSupport 
+                    }
                 }
             });
 

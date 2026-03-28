@@ -1,6 +1,5 @@
 // src/routes/api.js
 
-// src/routes/api.js
 const express = require('express');
 const router = express.Router();
 const emaController = require('../controllers/emaController');

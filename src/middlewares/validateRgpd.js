@@ -1,16 +1,18 @@
 // src/middlewares/validateRgpd.js
 
 module.exports = (req, res, next) => {
-    const { consentAccepted } = req.body;
+    // El navegador envía "true" (string), los tests envían true (boolean)
+    const consent = req.body.consentAccepted;
 
-    // Blindaje Ético (RGPD): Rechazo automático en la puerta de enlace
-    if (consentAccepted !== true) {
-        console.error(`[RGPD ALERTA] Intento de registro sin consentimiento explícito.`);
-        return res.status(400).json({ 
-            error: 'Privacidad por Diseño: El consentimiento explícito es obligatorio para procesar datos de salud.' 
+    const isAccepted = consent === true || consent === 'true';
+
+    if (!isAccepted) {
+        return res.status(403).json({ 
+            error: "Privacidad por Diseño: El consentimiento explícito es obligatorio para procesar datos de salud." 
         });
     }
 
-    // Si hay consentimiento, pasamos el control al controlador (emaController)
+    // Normalizamos a booleano para el controlador y la base de datos
+    req.body.consentAccepted = true;
     next();
 };

@@ -1,1 +1,1 @@
-// Auth Controller
+// src\controllers\authController.js

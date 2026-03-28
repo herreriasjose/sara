@@ -1,26 +1,36 @@
-// src/models/Caretaker.js
+// src\models\Caretaker.js
+
 const mongoose = require('mongoose');
 
 const CaretakerSchema = new mongoose.Schema({
-    externalId: { type: String, required: true, unique: true }, // WhatsApp ID
+    externalId: { type: String, required: true, unique: true },
+    phoneReal: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    email: { type: String, sparse: true }, // sparse permite que sea opcional pero indexado
-    phoneAlt: { type: String },
-    postalCode: { type: String },
-    phoneReal: { type: String, required: true, unique: true }, // Teléfono real para la API de WhatsApp
-    // Perfil del Cuidador (Variables Moderadoras para el TFM)
-    age: { type: Number },
-    relationship: { type: String, enum: ['spouse', 'child', 'sibling', 'other', 'professional'] },
-    yearsCaregiving: { type: Number },
-
-    // El Estresor (La carga del TFM)
-    patientDisabilityGrade: { type: Number, min: 0, max: 100, default: 0 }, 
+    email: { type: String, sparse: true },
+    postalCode: { type: String, required: true },
     
-    // El Modulador (Tu perfil específico)
+    // Perfil del Cuidador (Díada - Parte 1)
+    age: { type: Number, required: true },
+    gender: { type: String, enum: ['female', 'male', 'other'], required: true },
+    relationship: { 
+        type: String, 
+        enum: ['spouse', 'child', 'sibling', 'other', 'professional'],
+        required: true 
+    },
+    isProfessional: { type: Boolean, default: false },
+    yearsCaregiving: { type: Number, required: true },
+
+    // Perfil del Paciente (Díada - Parte 2)
+    patientAge: { type: Number, required: true },
+    patientGender: { type: String, enum: ['female', 'male', 'other'], required: true },
+    patientDisabilityGrade: { type: Number, min: 0, max: 100, required: true }, 
+
+    // Moduladores ERP
+    burdenType: { type: String, enum: ['physical', 'cognitive', 'mixed'], required: true },
+    hasExternalSupport: { type: Boolean, required: true },
+    
     caretakerDisabilityGrade: { type: Number, min: 0, max: 100, default: 0 },
     consentAccepted: { type: Boolean, required: true, default: false },
-    
-    // Motor Bayesiano y JITAI
     lastBurnoutProbability: { type: Number, default: 0.1 }, 
     lastInteractionAt: { type: Date },
     streakCount: { type: Number, default: 0 }

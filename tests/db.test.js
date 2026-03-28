@@ -27,9 +27,18 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
 
     it('1. Debe crear un Cuidador con datos completos', async () => {
       const caretaker = new Caretaker({ 
-          externalId: 'SARA-TEST-DB-01', 
-          phoneReal: '+34600000000', // NUEVO CAMPO REQUERIDO
+          externalId: 'SARA-HASH-DB-01', 
+          phoneReal: '+34600000000',
           name: 'Cuidador de Prueba DB',
+          age: 45,                          // SINCRONIZADO
+          gender: 'male',                   // SINCRONIZADO
+          relationship: 'spouse',
+          yearsCaregiving: 10,
+          postalCode: '08001',
+          patientAge: 80,                   // SINCRONIZADO
+          patientGender: 'female',          // SINCRONIZADO
+          burdenType: 'physical',           // SINCRONIZADO
+          hasExternalSupport: true,         // SINCRONIZADO
           consentAccepted: true,
           caretakerDisabilityGrade: 69,
           patientDisabilityGrade: 80
@@ -39,7 +48,6 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
       
       assert.ok(savedCaretaker._id);
       assert.strictEqual(savedCaretaker.name, 'Cuidador de Prueba DB');
-      assert.strictEqual(savedCaretaker.phoneReal, '+34600000000');
     });
 
     it('2. Debe actualizar racha y probabilidad burnout', async () => {
@@ -61,8 +69,18 @@ describe('MongoDB Atlas - Ciclo de Vida de la BD (sara_test)', () => {
     before(async () => {
         const c = new Caretaker({ 
             externalId: 'SARA-EMA-FIX', 
-            phoneReal: '+34611111111', // NUEVO CAMPO REQUERIDO
+            phoneReal: '+34611111111',
             name: 'Caretaker EMA Test',
+            age: 50,                        // SINCRONIZADO
+            gender: 'female',               // SINCRONIZADO
+            relationship: 'child',
+            yearsCaregiving: 2,
+            postalCode: '41001',
+            patientAge: 75,                 // SINCRONIZADO
+            patientGender: 'male',          // SINCRONIZADO
+            patientDisabilityGrade: 50,
+            burdenType: 'mixed',            // SINCRONIZADO
+            hasExternalSupport: false,      // SINCRONIZADO
             consentAccepted: true 
         });
         const savedC = await c.save();

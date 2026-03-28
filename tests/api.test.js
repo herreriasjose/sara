@@ -39,31 +39,38 @@ describe('API Endpoints (Sincronización SARA)', () => {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                // CRÍTICO: Forzamos que la API nos devuelva JSON, no la redirección HTML
                 'Accept': 'application/json' 
             },
             body: JSON.stringify({
                 phoneNumber: testPhoneNumber,
                 name: 'Jose Test API',
-                consentAccepted: true,
+                age: 45,
+                gender: 'male',
+                relationship: 'child',
+                yearsCaregiving: 5,
+                postalCode: '28001',
+                patientAge: 82,
+                patientGender: 'female',
                 patientDisabilityGrade: 75,
-                caretakerDisabilityGrade: 69
+                burdenType: 'mixed',
+                hasExternalSupport: true,
+                consentAccepted: true
             }),
-            // Evitamos seguir redirecciones automáticamente si las hubiera
             redirect: 'manual' 
         });
         
-        assert.strictEqual(res.status, 201, 'El registro debe ser exitoso (201 Created)');
+        assert.strictEqual(res.status, 201);
         
         const data = await res.json();
-        assert.ok(data.internalId, 'El controlador debe devolver el internalId generado');
-        assert.match(data.internalId, /^SARA-[A-Z0-9]{12}$/, 'El formato del ID debe ser correcto');
+        // Sincronizamos con la propiedad 'id' devuelta por el controlador
+        assert.ok(data.data.id, 'Debe devolver el id (externalId)');
+        assert.match(data.data.id, /^[a-f0-9]{16}$/, 'Formato hash SHA-256 (truncado)');
         
-        generatedInternalId = data.internalId;
+        generatedInternalId = data.data.id;
     });
 
     test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
-        assert.ok(generatedInternalId, 'Asegurar que el ID se generó en el test anterior');
+        assert.ok(generatedInternalId);
 
         const res = await fetch(`${baseUrl}/ema`, {
             method: 'POST',
@@ -82,7 +89,7 @@ describe('API Endpoints (Sincronización SARA)', () => {
             redirect: 'manual'
         });
         
-        assert.strictEqual(res.status, 200, 'Guardado EMA autorizado y procesado');
+        assert.strictEqual(res.status, 200);
         const data = await res.json();
         assert.strictEqual(data.status, 'ok');
     });
