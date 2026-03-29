@@ -1,134 +1,154 @@
-// src/controllers/emaController.js
+// src\controllers\emaController.js
 
+const CaretakerIdentity = require('../models/CaretakerIdentity');
+const CaretakerClinical = require('../models/CaretakerClinical');
 const EmaEntry = require('../models/EmaEntry');
 const crypto = require('crypto');
-const brainClient = require('../services/brainClient'); // Puente con FastAPI
-const Caretaker = require('../models/Caretaker');
+const brainClient = require('../services/brainClient');
 const authService = require('../services/authService');
+const { encrypt, decrypt } = require('../services/encryptionService');
+const auditLogger = require('../services/auditLogger');
 
-/**
- * Motor de Privacidad: Generación de ID Interno Determinista
- * Transforma un número de teléfono en un identificador opaco "SARA-XXXXX"
- */
 function generateInternalId(phoneNumber) {
-    // 1. Limpiamos cualquier carácter que no sea numérico (espacios, guiones, +)
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
-    
-    // 2. Generamos un hash criptográfico rápido usando librerías nativas (cero dependencias)
     const hash = crypto.createHash('sha256').update(normalizedPhone).digest('hex');
-    
-    // 3. Formateamos el token para que sea manejable en URLs
     return `SARA-${hash.substring(0, 12).toUpperCase()}`;
 }
 
-/**
- * @route POST /api/caretakers
- * @desc Registra un nuevo cuidador y genera su gemelo digital opaco
- */
 exports.registerCaretaker = async (req, res) => {
     try {
-        const { phoneNumber, relationship, hasExternalSupport, ...rest } = req.body;
+        const { phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted } = req.body;
 
-        const caretakerData = {
-            ...rest,
-            phoneReal: phoneNumber,
-            relationship,
-            // Normalización de checkbox/string a booleano
-            hasExternalSupport: hasExternalSupport === 'true' || hasExternalSupport === true,
-            externalId: authService.hashPhoneNumber(phoneNumber),
-            isProfessional: relationship === 'professional'
+        // CORRECCIÓN: Usar la función de generación de ID opaco del ERP
+        const externalId = generateInternalId(phoneNumber);
+
+        const identityData = {
+            externalId,
+            phoneReal: encrypt(phoneNumber),
+            name: encrypt(name),
+            email: email ? encrypt(email) : undefined,
+            postalCode: encrypt(postalCode),
+            consentAccepted: consentAccepted === 'true' || consentAccepted === true
         };
 
-        const newCaretaker = await Caretaker.create(caretakerData);
-        
-        if (req.accepts('html')) {
-            return res.render('pages/index', { success: true, message: 'Registro de Díada completado.' });
-        }
+        const clinicalData = {
+            externalId,
+            age,
+            gender,
+            relationship,
+            isProfessional: relationship === 'professional',
+            yearsCaregiving,
+            patientAge,
+            patientGender,
+            burdenType,
+            hasExternalSupport: hasExternalSupport === 'true' || hasExternalSupport === true,
+            patientDisabilityGrade: encrypt(Number(patientDisabilityGrade || 0)),
+            caretakerDisabilityGrade: encrypt(Number(caretakerDisabilityGrade || 0)),
+            lastBurnoutProbability: encrypt(0.1)
+        };
 
-        res.status(201).json({ status: 'success', data: { id: newCaretaker.externalId } });
+        await CaretakerIdentity.create(identityData);
+        await CaretakerClinical.create(clinicalData);
+        
+        auditLogger.logAccess('CREATE_VAULT', externalId, 'User_Registration');
+
+        if (req.accepts('html')) return res.redirect('/?status=registered');
+        
+        res.status(201).json({ status: 'success', data: { id: externalId } });
     } catch (error) {
         res.status(400).json({ status: 'error', message: error.message });
     }
 };
 
-/**
- * @route POST /api/ema
- * @desc Captura la Evaluación Ecológica Momentaria y dispara el motor Bayesiano
- */
 exports.submitEma = async (req, res) => {
     try {
-        // Asumimos que requireAuth.js verifica el Token Efímero y extrae el ID
         const internalId = req.user ? req.user.externalId : req.body.externalId; 
         const { energy, tension, clarity, responseTimeMs } = req.body;
 
-        if (!internalId || !energy || !tension || !clarity) {
-            return res.status(400).json({ error: 'Faltan métricas psicométricas del ERP o identificación.' });
-        }
+        const clinicalProfile = await CaretakerClinical.findOne({ externalId: internalId });
+        if (!clinicalProfile) return res.status(404).json({ error: 'Contexto clínico no encontrado.' });
 
-        // 1. Recuperar el contexto histórico del cuidador
-        const caretaker = await Caretaker.findOne({ externalId: internalId });
-        if (!caretaker) {
-            return res.status(404).json({ error: 'Contexto de cuidador no encontrado.' });
-        }
-
-        // 2. Persistir la micro-validación en bruto
         const newEma = new EmaEntry({
-            patientId: caretaker._id, // Enlace interno al ObjectId de Mongo
-            metrics: {
-                energy: parseInt(energy),
-                tension: parseInt(tension),
-                clarity: parseInt(clarity)
-            },
+            patientId: clinicalProfile._id,
+            metrics: { energy: parseInt(energy), tension: parseInt(tension), clarity: parseInt(clarity) },
             responseTimeMs: parseInt(responseTimeMs) || 0
         });
 
         await newEma.save();
 
-        // 3. JITAI & Inferencia Bayesiana (Puente Node.js ↔ Python)
-        // Se ejecuta sin bloquear el hilo principal para mantener tiempos de respuesta de milisegundos.
         try {
-            // Llamada al microservicio en Python (SARA-Brain)
+            const currentProb = Number(decrypt(clinicalProfile.lastBurnoutProbability));
+            
             const prediction = await brainClient.getBurnoutPrediction({
                 metrics: newEma.metrics,
-                priorProbability: caretaker.lastBurnoutProbability,
+                priorProbability: currentProb,
                 context: {
-                    caregiver: { age: caretaker.age, gender: caretaker.gender },
-                    patient: { age: caretaker.patientAge, gender: caretaker.patientGender },
-                    dynamics: { 
-                        years: caretaker.yearsCaregiving, 
-                        burden: caretaker.burdenType, 
-                        support: caretaker.hasExternalSupport 
-                    }
+                    caregiver: { age: clinicalProfile.age, gender: clinicalProfile.gender },
+                    patient: { age: clinicalProfile.patientAge, gender: clinicalProfile.patientGender },
+                    dynamics: { years: clinicalProfile.yearsCaregiving, burden: clinicalProfile.burdenType, support: clinicalProfile.hasExternalSupport }
                 }
             });
 
-            // 4. Actualizar el estado dinámico del Cuidador
-            caretaker.lastBurnoutProbability = prediction.posteriorProbability || caretaker.lastBurnoutProbability;
-            caretaker.lastInteractionAt = new Date();
-            caretaker.streakCount += 1;
-            await caretaker.save();
-
-            // Lógica JITAI (Just-In-Time Adaptive Intervention)
-            if (prediction.interventionRequired) {
-                console.log(`[JITAI Trigger] Alerta de claudicación detectada para: ${caretaker.externalId}`);
-                // TODO: Orquestar envío de mensaje de soporte vía WhatsApp
-            }
+            clinicalProfile.lastBurnoutProbability = encrypt(prediction.posteriorProbability || currentProb);
+            clinicalProfile.lastInteractionAt = new Date();
+            clinicalProfile.streakCount += 1;
+            await clinicalProfile.save();
 
         } catch (brainError) {
-            // El Gateway debe ser resiliente. Si SARA-Brain falla, no castigamos al usuario.
-            console.error('[Gateway ↔ Brain] Fallo de inferencia bayesiana. Dato crudo salvado.', brainError.message);
+            console.error('[Gateway ↔ Brain] Fallo de inferencia bayesiana.', brainError.message);
         }
 
-        // 5. Cierre de ciclo
-        if (req.accepts('html')) {
-            // Renderizamos una vista hiper-ligera de agradecimiento
-            return res.render('pages/ema', { success: true, message: 'Registro completado. Gracias por cuidarte.' });
-        }
-
-        return res.status(200).json({ status: 'ok', message: 'Métricas guardadas y procesadas.' });
+        // APLICACIÓN DE PRG
+        if (req.accepts('html')) return res.redirect('/?status=ema_saved');
+        
+        return res.status(200).json({ status: 'ok' });
 
     } catch (error) {
-        console.error('[Gateway] Error en el procesado EMA:', error);
-        res.status(500).json({ error: 'Fallo al procesar la evaluación momentaria.' });
+        res.status(500).json({ error: 'Fallo al procesar la evaluación.' });
+    }
+    };
+
+exports.getAllCaretakers = async (req, res) => {
+    try {
+        auditLogger.logAccess('DECRYPT_BULK_READ', 'ALL_USERS', req.user ? req.user.role : 'Admin_API');
+
+        const identities = await CaretakerIdentity.find({});
+        const clinicals = await CaretakerClinical.find({});
+
+        const decryptedList = identities.map(identity => {
+            const clinical = clinicals.find(c => c.externalId === identity.externalId);
+            return {
+                externalId: identity.externalId,
+                name: decrypt(identity.name),
+                phoneReal: decrypt(identity.phoneReal),
+                email: identity.email ? decrypt(identity.email) : null,
+                postalCode: decrypt(identity.postalCode),
+                burnoutProbability: clinical ? Number(decrypt(clinical.lastBurnoutProbability)) : null,
+                streak: clinical ? clinical.streakCount : 0
+            };
+        });
+
+        res.status(200).json({ status: 'success', count: decryptedList.length, data: decryptedList });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: error.message });
+    }
+};
+
+exports.deleteCaretaker = async (req, res) => {
+    try {
+        const { externalId } = req.params;
+        
+        await CaretakerIdentity.deleteOne({ externalId });
+        
+        await CaretakerClinical.updateOne(
+            { externalId }, 
+            { $set: { externalId: `ANON-${crypto.randomBytes(8).toString('hex')}` } }
+        );
+
+        auditLogger.logAccess('IRREVERSIBLE_ANONYMIZATION', externalId, req.user ? req.user.role : 'Admin_API');
+
+        res.status(200).json({ status: 'success', message: 'Derecho al olvido ejecutado. Trayectoria clínica anonimizada.' });
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: error.message });
     }
 };

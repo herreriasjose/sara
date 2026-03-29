@@ -38,6 +38,7 @@
                             <div class="col-6 mb-3">
                                 <label class="form-label small fw-bold">Sexo</label>
                                 <select name="gender" class="form-select form-select-sm" required>
+                                    <option value="" selected disabled>Selecciona...</option>
                                     <option value="female">Mujer</option>
                                     <option value="male">Hombre</option>
                                     <option value="other">Otro</option>
@@ -61,6 +62,7 @@
                             <div class="mb-3">
                             <label class="form-label small fw-bold">Vínculo</label>
                             <select name="relationship" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="child">Hijo/a</option>
                                 <option value="spouse">Cónyuge / Pareja</option>
                                 <option value="sibling">Hermano/a</option>
@@ -71,7 +73,7 @@
 
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Discapacidad Paciente (%)</label>
-                            <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" placeholder="Ej: 75" min="0" max="100" required>
+                            <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" min="0" max="100" required>
                         </div>
 
                         
@@ -88,6 +90,7 @@
                             <div class="col-6 mb-3">
                                 <label class="form-label small fw-bold">Sexo Paciente</label>
                                 <select name="patientGender" class="form-select form-select-sm" required>
+                                    <option value="" selected disabled>Selecciona...</option>
                                     <option value="female">Mujer</option>
                                     <option value="male">Hombre</option>
                                     <option value="other">Otro</option>
@@ -99,6 +102,7 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Tipo de Carga Principal</label>
                             <select name="burdenType" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="physical">Física (Movilidad, aseo...)</option>
                                 <option value="cognitive">Cognitiva (Demencia, conducta...)</option>
                                 <option value="mixed">Mixta (Ambas por igual)</option>
@@ -108,6 +112,7 @@
                         <div class="mb-3">
                             <label class="form-label small fw-bold">¿Dispone de apoyo externo?</label>
                             <select name="hasExternalSupport" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="true">Sí (Ayuda familiar o profesional)</option>
                                 <option value="false">No (Cuida solo/a)</option>
                             </select>

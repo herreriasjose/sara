@@ -65,11 +65,12 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-bold">Discapacidad %</label>
-                            <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" placeholder="Ej: 75" min="0" max="100" required>
+                            <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" min="0" max="100" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Vínculo familiar</label>
                             <select name="relationship" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="child">Hijo/a</option>
                                 <option value="spouse">Cónyuge / Pareja</option>
                                 <option value="sibling">Hermano/a</option>
@@ -90,6 +91,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Tipo de Carga Principal</label>
                             <select name="burdenType" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="physical">Física (Movilidad, aseo...)</option>
                                 <option value="cognitive">Cognitiva (Demencia, conducta...)</option>
                                 <option value="mixed">Mixta (Ambas por igual)</option>
@@ -98,6 +100,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">¿Tienes apoyo externo?</label>
                             <select name="hasExternalSupport" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>Selecciona...</option>
                                 <option value="true">Sí (Ayuda familiar o profesional)</option>
                                 <option value="false">No (Cuido en soledad)</option>
                             </select>

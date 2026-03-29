@@ -47,9 +47,17 @@ app.use('/api', apiRoutes);
 
 // 6. Endpoint de la Landing Page (EJS)
 app.get('/', (req, res) => {
-    // Añadimos 'pages/' al path del renderizado
+    // Diccionario de estados para evitar inyección de código (XSS) vía URL
+    const statusMessages = {
+        'registered': 'Registro completado en la Bóveda.',
+        'ema_saved': 'Registro completado. Gracias por cuidarte.'
+    };
+
+    const alertMessage = statusMessages[req.query.status];
+
     res.render('pages/index', { 
-        title: 'SARA - Sistema de Acompañamiento y Resiliencia Alostática'
+        success: !!alertMessage, 
+        message: alertMessage || null 
     });
 });
 

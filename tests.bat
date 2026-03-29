@@ -4,17 +4,24 @@
 title Lanzador-Tests
 
 echo ===================================================
-echo SARA: Suite de Tests
+echo SARA: Tests
 echo ===================================================
 
-echo [i] Liberando puertos y cerrando instancias previas...
+:: Mapa del proyecto
+
+echo [i] Generando mapa del proyecto (omitiendo dependencias)...
+powershell -NoProfile -Command "Get-ChildItem -Recurse | Where-Object { $_.FullName -notmatch 'node_modules|\.git|__pycache__' } | ForEach-Object { $indent = ($_.FullName.Replace((Get-Location).Path, '').Split('\\').Count - 2); if ($indent -ge 0) { '  ' * $indent + '|-- ' + $_.Name } }" > xtructure.txt
+
+:: -----------------------------------------
+
+:: Limpieza de servidores y puertos anteriores
 taskkill /FI "WINDOWTITLE eq SARA-*" /T /F >nul 2>&1
 
 :: 
-echo Iniciando validacion del Motor Bayesiano (FastAPI)...
+echo Iniciando pytest (FastAPI)...
 start "SARA-Tests-Brain" cmd /k "title SARA-Tests-Brain && cd brain && pytest tests/ -v"
 
-echo Iniciando validacion de Infraestructura (Node.js)...
+echo Iniciando node:test (Node.js)...
 start "SARA-Tests-Gateway" cmd /k "title SARA-Tests-Gateway && npm run test"
 
 echo.

@@ -4,27 +4,12 @@ const express = require('express');
 const router = express.Router();
 const emaController = require('../controllers/emaController');
 
-// Middlewares de protección
-const validateRgpd = require('../middlewares/validateRgpd');
-const requireAuth = require('../middlewares/requireAuth');
+router.get('/ping', (req, res) => res.status(200).json({ status: 'ok' }));
 
-/**
- * Rutas Públicas / Healthcheck
- */
-router.get('/ping', (req, res) => {
-    res.status(200).json({ status: 'ok', service: 'SARA-Gateway', node: process.version });
-});
+router.post('/caretakers', emaController.registerCaretaker);
+router.get('/caretakers', emaController.getAllCaretakers);
+router.delete('/caretakers/:externalId', emaController.deleteCaretaker);
 
-/**
- * Registro de Participantes
- * Protegido por validación de consentimiento RGPD
- */
-router.post('/caretakers', validateRgpd, emaController.registerCaretaker);
-
-/**
- * Captura de Datos EMA
- * Protegido por Token Efímero (Auth)
- */
-router.post('/ema', requireAuth, emaController.submitEma);
+router.post('/ema', emaController.submitEma);
 
 module.exports = router;

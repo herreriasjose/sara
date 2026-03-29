@@ -1,23 +1,18 @@
-// src\models\EmaEntry.js
+// src/models/EmaEntry.js
 
 const mongoose = require('mongoose');
 
 const EmaEntrySchema = new mongoose.Schema({
-  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Caretaker', required: true },
-  
-  // Datos Psicométricos (Alineados con McEwen y ERP)
-  metrics: {
-    energy: { type: Number, min: 1, max: 5, required: true },   // Batería (1-5)
-    tension: { type: Number, min: 1, max: 3, required: true },  // Agobio (1-3)
-    clarity: { type: Number, min: 1, max: 3, required: true }   // Mente (1-3)
+  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'CaretakerClinical', required: true },
+  metrics: { 
+    energy: { type: Number, min: 1, max: 5, required: true },
+    tension: { type: Number, min: 1, max: 3, required: true },
+    clarity: { type: Number, min: 1, max: 3, required: true }
   },
-  
-  // Control de calidad y fatiga cognitiva
-  responseTimeMs: { type: Number }, 
+  responseTimeMs: { type: Number },
   isHighQuality: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Middleware ajustado: < 2s es "click" impulsivo, > 45s es distracción
 EmaEntrySchema.pre('save', async function() {
   if (this.responseTimeMs < 2000 || this.responseTimeMs > 45000) {
     this.isHighQuality = false;

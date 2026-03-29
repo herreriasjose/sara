@@ -1,14 +1,18 @@
-:: run.bat
-
 @echo off
-:: 1. Protegemos esta ventana para que no se cierre a sí misma
-title Lanzador-SARA
+title Lanzador-servidores
 
 echo ===================================================
-echo SARA: Arranque del Ecosistema
+echo SARA: servidores
 echo ===================================================
 
-:: 2. Limpieza (Buscamos ventanas que empiecen por "SARA-")
+:: Mapa del proyecto
+
+echo [i] Generando mapa del proyecto (omitiendo dependencias)...
+powershell -NoProfile -Command "Get-ChildItem -Recurse | Where-Object { $_.FullName -notmatch 'node_modules|\.git|__pycache__' } | ForEach-Object { $indent = ($_.FullName.Replace((Get-Location).Path, '').Split('\\').Count - 2); if ($indent -ge 0) { '  ' * $indent + '|-- ' + $_.Name } }" > xtructure.txt
+
+:: -----------------------------------------
+
+:: Limpieza de servidores y puertos anteriores
 echo [i] Liberando puertos y cerrando instancias previas...
 taskkill /FI "WINDOWTITLE eq SARA-*" /T /F >nul 2>&1
 
@@ -19,5 +23,4 @@ start "SARA-Brain" cmd /k "title SARA-Brain && cd brain && python -m uvicorn mai
 echo Iniciando SARA Gateway...
 start "SARA-Gateway" cmd /k "title SARA-Gateway && node --env-file=.env.dev src/server.js"
 
-echo.
 echo.
