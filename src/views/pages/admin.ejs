@@ -1,0 +1,101 @@
+<%- include('../layouts/main', { 
+    title: 'SARA | Panel Investigador',
+    body: `
+    <div class="hero-section text-center rounded-3 shadow-sm p-5 bg-white">
+        <h1 class="display-5 fw-bold">Centro de Control JITAI</h1>
+        <p class="lead">Gestión de Bóveda y Monitorización Bayesiana</p>
+        <hr class="my-4">
+        
+        <div class="row text-start mt-4 g-4">
+            <div class="col-md-6">
+                <div class="card h-100 border-primary shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">Operaciones de Campo</h5>
+                        <div class="d-grid gap-2 mt-3">
+                            <button onclick="generateInvite()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta Cuidador (1 Día)</button>
+                            <div id="inviteLinkContainer" class="alert alert-success d-none small p-2 text-break mt-1 mb-1"></div>
+                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa (Investigador)</a>
+                            <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Estatus Técnico</h5>
+                        <ul class="list-unstyled small mt-3">
+                            <li><span class="badge bg-success me-2">Online</span> Node.js Gateway</li>
+                            <li><span class="badge bg-info me-2">Vault</span> Segregación Activa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row text-start mt-4">
+            <div class="col-12">
+                <div class="card border-danger shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-danger">Gestión de Bóveda RGPD</h5>
+                        <div class="mb-4 mt-3">
+                            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Bóveda (JSON)</a>
+                        </div>
+                        <hr>
+                        <form id="deleteForm" onsubmit="deleteCaretaker(event)">
+                            <label class="form-label small fw-bold">Anonimización Irreversible (Derecho al Olvido)</label>
+                            <div class="input-group input-group-sm w-75">
+                                <input type="text" id="deleteExternalId" class="form-control" placeholder="externalId" required>
+                                <button class="btn btn-danger" type="submit">Borrar Identidad</button>
+                            </div>
+                            <div id="deleteAlert" class="form-text mt-2"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    async function deleteCaretaker(event) {
+        event.preventDefault();
+        var extId = document.getElementById('deleteExternalId').value.trim();
+        var alertBox = document.getElementById('deleteAlert');
+        alertBox.innerHTML = '<span class="text-muted small">Procesando...</span>';
+        try {
+            var response = await fetch('/api/caretakers/' + extId, { method: 'DELETE' });
+            var data = await response.json();
+            if (response.ok) {
+                alertBox.innerHTML = '<span class="text-success small fw-bold">✓ ' + data.message + '</span>';
+                document.getElementById('deleteExternalId').value = '';
+            } else {
+                alertBox.innerHTML = '<span class="text-danger small">✗ ' + (data.message || data.error) + '</span>';
+            }
+        } catch (error) {
+            alertBox.innerHTML = '<span class="text-danger small">✗ Error de conexión.</span>';
+        }
+    }
+
+    async function generateInvite() {
+        var container = document.getElementById('inviteLinkContainer');
+        container.classList.remove('d-none', 'alert-success', 'alert-danger');
+        container.classList.add('alert-info');
+        container.innerText = 'Generando...';
+        
+        try {
+            var response = await fetch('/admin/invitations', { method: 'POST' });
+            var data = await response.json();
+            if (response.ok) {
+                container.classList.replace('alert-info', 'alert-success');
+                // Corrección: Concatenación clásica para evitar colisión de backticks con EJS
+                container.innerHTML = '<strong>Enlace de un solo uso:</strong><br><a href="' + data.url + '" target="_blank">' + data.url + '</a>';
+            } else {
+                container.classList.replace('alert-info', 'alert-danger');
+                container.innerText = 'Error al generar enlace.';
+            }
+        } catch (error) {
+            container.classList.replace('alert-info', 'alert-danger');
+            container.innerText = 'Error de red.';
+        }
+    }
+    </script>
+` }) %>

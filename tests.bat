@@ -9,8 +9,8 @@ echo ===================================================
 
 :: Mapa del proyecto
 
-echo [i] Generando mapa del proyecto (omitiendo dependencias)...
-powershell -NoProfile -Command "Get-ChildItem -Recurse | Where-Object { $_.FullName -notmatch 'node_modules|\.git|__pycache__' } | ForEach-Object { $indent = ($_.FullName.Replace((Get-Location).Path, '').Split('\\').Count - 2); if ($indent -ge 0) { '  ' * $indent + '|-- ' + $_.Name } }" > xtructure.txt
+echo [i] Generando mapa del proyecto...
+powershell -NoProfile -Command "Get-ChildItem -Recurse | Where-Object { $_.FullName -notmatch 'node_modules|\.git|__pycache__|\.pytest_cache|venv|\.vscode' } | Sort-Object FullName | ForEach-Object { $relativePath = $_.FullName.Replace((Get-Location).Path, '').TrimStart('\\'); if ($relativePath) { $elements = $relativePath.Split('\\'); $indent = '  ' * ($elements.Count - 1); $indent + '|-- ' + $_.Name } }" > xtructure.txt
 
 :: -----------------------------------------
 

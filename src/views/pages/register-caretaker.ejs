@@ -1,5 +1,3 @@
-<!-- src\views\pages\register-caretaker.ejs -->
-
 <%- include('../layouts/main', { body: `
 <div class="container mt-4" style="max-width: 650px;">
     <div class="card shadow-sm border-0">
@@ -123,7 +121,9 @@
                         </div>
                     </div>
                 </div>
-
+                
+                <input type="hidden" name="tokenId" value="${typeof tokenId !== 'undefined' ? tokenId : ''}">
+                
                 <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">
                     Comenzar Acompañamiento
                 </button>
@@ -134,5 +134,5 @@
             </form>
         </div>
     </div>
-    </div>
-    ` }) %>
+</div>
+` }) %>

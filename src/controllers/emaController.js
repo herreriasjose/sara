@@ -8,6 +8,7 @@ const brainClient = require('../services/brainClient');
 const authService = require('../services/authService');
 const { encrypt, decrypt } = require('../services/encryptionService');
 const auditLogger = require('../services/auditLogger');
+const InvitationToken = require('../models/InvitationToken');
 
 function generateInternalId(phoneNumber) {
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
@@ -17,9 +18,9 @@ function generateInternalId(phoneNumber) {
 
 exports.registerCaretaker = async (req, res) => {
     try {
-        const { phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted } = req.body;
+        // 1. Añade tokenId aquí al final
+        const { phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted, tokenId } = req.body;
 
-        // CORRECCIÓN: Usar la función de generación de ID opaco del ERP
         const externalId = generateInternalId(phoneNumber);
 
         const identityData = {
@@ -50,6 +51,12 @@ exports.registerCaretaker = async (req, res) => {
         await CaretakerIdentity.create(identityData);
         await CaretakerClinical.create(clinicalData);
         
+        // 2. Lógica de consumo del token
+        if (tokenId) {
+            await InvitationToken.deleteOne({ token: tokenId });
+            auditLogger.logAccess('TOKEN_CONSUMED', externalId, 'User_Registration');
+        }
+
         auditLogger.logAccess('CREATE_VAULT', externalId, 'User_Registration');
 
         if (req.accepts('html')) return res.redirect('/?status=registered');
