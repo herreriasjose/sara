@@ -1,4 +1,4 @@
-// src\models\InvitationToken.js
+// src\models\InvitationCaretakerToken.js
 
 const mongoose = require('mongoose');
 const crypto = require('crypto');
@@ -6,7 +6,7 @@ const crypto = require('crypto');
 // Tiempo de expiración configurable desde .env (por defecto 86400 segundos = 1 día)
 const TTL_SECONDS = parseInt(process.env.INVITATION_TTL) || 86400;
 
-const invitationTokenSchema = new mongoose.Schema({
+const invitationCaretakerTokenSchema = new mongoose.Schema({
     token: {
         type: String,
         required: true,
@@ -20,4 +20,4 @@ const invitationTokenSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('InvitationToken', invitationTokenSchema);
+module.exports = mongoose.model('InvitationCaretakerToken', invitationCaretakerTokenSchema);

@@ -8,7 +8,7 @@ const brainClient = require('../services/brainClient');
 const authService = require('../services/authService');
 const { encrypt, decrypt } = require('../services/encryptionService');
 const auditLogger = require('../services/auditLogger');
-const InvitationToken = require('../models/InvitationToken');
+const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 
 function generateInternalId(phoneNumber) {
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
@@ -53,7 +53,7 @@ exports.registerCaretaker = async (req, res) => {
         
         // 2. Lógica de consumo del token
         if (tokenId) {
-            await InvitationToken.deleteOne({ token: tokenId });
+            await InvitationCaretakerToken.deleteOne({ token: tokenId });
             auditLogger.logAccess('TOKEN_CONSUMED', externalId, 'User_Registration');
         }
 

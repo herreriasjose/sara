@@ -1,3 +1,5 @@
+<!-- src\views\pages\admin.ejs -->
+
 <%- include('../layouts/main', { 
     title: 'SARA | Panel Investigador',
     body: `
@@ -12,9 +14,10 @@
                     <div class="card-body">
                         <h5 class="card-title text-primary">Operaciones de Campo</h5>
                         <div class="d-grid gap-2 mt-3">
-                            <button onclick="generateInvite()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta Cuidador (1 Día)</button>
+                            <button onclick="generateInvitationCaretaker()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Cuidador (1 Día)</button>
                             <div id="inviteLinkContainer" class="alert alert-success d-none small p-2 text-break mt-1 mb-1"></div>
-                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa (Investigador)</a>
+                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa de Cuidador</a>
+                            <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
                             <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
                         </div>
                     </div>
@@ -75,7 +78,7 @@
         }
     }
 
-    async function generateInvite() {
+    async function generateInvitationCaretaker() {
         var container = document.getElementById('inviteLinkContainer');
         container.classList.remove('d-none', 'alert-success', 'alert-danger');
         container.classList.add('alert-info');
@@ -97,5 +100,28 @@
             container.innerText = 'Error de red.';
         }
     }
+
+    async function generateInvitationResearcher() {
+        var container = document.getElementById('inviteLinkContainer');
+        container.classList.remove('d-none', 'alert-success', 'alert-danger');
+        container.classList.add('alert-info');
+        container.innerText = 'Generando enlace cifrado...';
+        
+        try {
+            var response = await fetch('/admin/invitations/researcher', { method: 'POST' });
+            var data = await response.json();
+            if (response.ok) {
+                container.classList.replace('alert-info', 'alert-success');
+                container.innerHTML = '<strong>Acceso Investigador (Expira en 24h):</strong><br><a href="' + data.url + '" target="_blank">' + data.url + '</a>';
+            } else {
+                container.classList.replace('alert-info', 'alert-danger');
+                container.innerText = 'Fallo en la generación de la semilla criptográfica.';
+            }
+        } catch (error) {
+            container.classList.replace('alert-info', 'alert-danger');
+            container.innerText = 'Colapso de red o Gateway inaccesible.';
+        }
+    }
+
     </script>
 ` }) %>

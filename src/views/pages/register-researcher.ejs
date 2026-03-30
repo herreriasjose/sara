@@ -1,0 +1,95 @@
+<!-- src\views\pages\register-researcher.ejs -->
+
+<%- include('../layouts/main', { 
+    title: 'SARA | Alta Investigador',
+    body: `
+    <div class="registration-container p-4 max-w-md mx-auto bg-white rounded-xl shadow-md space-y-4 mt-10">
+        <h2 class="text-2xl font-bold text-gray-900">Configuración de Bóveda Investigador</h2>
+        <p class="text-gray-600">Complete sus credenciales para acceder al panel de monitorización JITAI.</p>
+
+        <form id="researcherForm" class="sara-form space-y-4 mt-4">
+            <input type="hidden" id="token" value="${token}">
+            
+            <div class="form-group">
+                <label for="firstName" class="block text-sm font-medium text-gray-700">Nombre Legal (Trazabilidad Ética)</label>
+                <input type="text" id="firstName" required autocomplete="given-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <div class="form-group">
+                <label for="lastName" class="block text-sm font-medium text-gray-700">Apellidos</label>
+                <input type="text" id="lastName" required autocomplete="family-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <div class="form-group">
+                <label for="alias" class="block text-sm font-medium text-gray-700">Alias (Visible para el Cuidador en WhatsApp)</label>
+                <input type="text" id="alias" required placeholder="Ej. Dr. Martínez" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="block text-sm font-medium text-gray-700">Correo Institucional</label>
+                <input type="email" id="email" required autocomplete="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <div class="form-group">
+                <label for="mobile" class="block text-sm font-medium text-gray-700">Teléfono Móvil (Alertas de Claudicación)</label>
+                <input type="tel" id="mobile" required autocomplete="tel" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="block text-sm font-medium text-gray-700">Contraseña de Acceso (Bóveda Clínica)</label>
+                <input type="password" id="password" required minlength="8" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-6">Inicializar Perfil</button>
+        </form>
+        <div id="statusMessage" style="display: none; margin-top: 15px;" class="p-3 rounded"></div>
+    </div>
+
+    <script>
+    document.getElementById('researcherForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('statusMessage');
+        btn.disabled = true;
+        btn.innerText = 'Cifrando datos...';
+
+        const currentToken = document.getElementById('token').value;
+        const payload = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            alias: document.getElementById('alias').value,
+            email: document.getElementById('email').value,
+            mobile: document.getElementById('mobile').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            // Concatenación clásica para evitar conflictos con el template literal del EJS wrapper
+            const response = await fetch('/api/researchers/register/' + currentToken, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                status.style.color = 'green';
+                status.innerText = 'Bóveda configurada correctamente. Redirigiendo al panel...';
+                status.style.display = 'block';
+                setTimeout(() => window.location.href = '/admin', 2000);
+            } else {
+                throw new Error(data.error || 'Error en el registro');
+            }
+        } catch (error) {
+            status.style.color = 'red';
+            status.innerText = error.message;
+            status.style.display = 'block';
+            btn.disabled = false;
+            btn.innerText = 'Reintentar Inicialización';
+        }
+    });
+    </script>
+    ` 
+}) %>

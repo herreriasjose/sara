@@ -28,3 +28,23 @@ exports.verifyEmaToken = (token) => {
         return (hash === expectedHash) ? patientId : null;
     } catch (e) { return null; }
 };
+
+exports.generateBlindIndex = (text) => {
+    if (!text) return null;
+    return crypto.createHmac('sha256', SECRET)
+        .update(text.toLowerCase().trim())
+        .digest('hex');
+};
+
+exports.hashPassword = (password) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${derivedKey}`;
+};
+
+exports.verifyPassword = (password, hash) => {
+    if (!hash || typeof hash !== 'string' || !hash.includes(':')) return false;
+    const [salt, key] = hash.split(':');
+    const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
+    return key === derivedKey;
+};

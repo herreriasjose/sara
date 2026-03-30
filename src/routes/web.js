@@ -2,7 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const InvitationToken = require('../models/InvitationToken');
+const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
+const InvitationResearcherToken = require('../models/InvitationResearcherToken')
 
 router.get('/', (req, res) => {
     res.render('pages/index', { title: 'SARA | Inicio' });
@@ -20,11 +21,31 @@ router.get('/test-ema', (req, res) => {
 
 router.get('/register/:tokenId', async (req, res) => {
     try {
-        const tokenRecord = await InvitationToken.findOne({ token: req.params.tokenId });
+        const tokenRecord = await InvitationCaretakerToken.findOne({ token: req.params.tokenId });
         if (!tokenRecord) {
             return res.status(403).send('El enlace de invitación ha expirado, no existe o ya ha sido utilizado.');
         }
         res.render('pages/register-caretaker', { title: 'Alta de Cuidador', tokenId: tokenRecord.token });
+    } catch (error) {
+        res.status(500).send('Error interno del servidor.');
+    }
+});
+
+router.get('/researcher/register/:tokenId', async (req, res) => {
+    try {
+        const tokenRecord = await InvitationResearcherToken.findOne({ token: req.params.tokenId });
+        
+        if (!tokenRecord) {
+            return res.status(404).render('pages/error', { 
+                message: 'El enlace de invitación ha caducado o no existe. Solicite uno nuevo al Administrador.' 
+            });
+        }
+
+        res.render('pages/register-researcher', { 
+            title: 'Alta de Investigador - SARA',
+            token: tokenRecord.token,
+            role: tokenRecord.role
+        });
     } catch (error) {
         res.status(500).send('Error interno del servidor.');
     }

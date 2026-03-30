@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const mongoose = require('mongoose');
 const app = require('../src/server');
-const InvitationToken = require('../src/models/InvitationToken');
+const InvitationCaretakerToken = require('../src/models/InvitationCaretakerToken');
 const CaretakerIdentity = require('../src/models/CaretakerIdentity');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
 
@@ -18,7 +18,7 @@ test.before(async () => {
         await mongoose.connect(mongoUri);
     }
     
-    await InvitationToken.deleteMany({});
+    await InvitationCaretakerToken.deleteMany({});
     await CaretakerIdentity.deleteMany({});
     await CaretakerClinical.deleteMany({});
 
@@ -49,7 +49,7 @@ test('Flujo de Bóveda: Invitaciones Efímeras y Consumo de Token', async (t) =>
         
         activeToken = data.token;
         
-        const tokenDoc = await InvitationToken.findOne({ token: activeToken });
+        const tokenDoc = await InvitationCaretakerToken.findOne({ token: activeToken });
         assert.ok(tokenDoc, 'El token no se ha insertado en MongoDB');
     });
 
@@ -94,7 +94,7 @@ test('Flujo de Bóveda: Invitaciones Efímeras y Consumo de Token', async (t) =>
         assert.strictEqual(res.status, 201);
         
         // Validación crítica de seguridad (Consumo del token de un solo uso)
-        const tokenDoc = await InvitationToken.findOne({ token: activeToken });
+        const tokenDoc = await InvitationCaretakerToken.findOne({ token: activeToken });
         assert.strictEqual(tokenDoc, null, 'Fallo de seguridad: El token no fue destruido tras su uso.');
     });
 });

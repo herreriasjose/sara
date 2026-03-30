@@ -4,16 +4,15 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
-const InvitationToken = require('../models/InvitationToken');
+const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
+const InvitationResearcherToken = require('../models/InvitationResearcherToken');
 
-// Bypass temporal de seguridad
 const bypassAuth = (req, res, next) => next();
 
 router.get('/', bypassAuth, (req, res) => {
     res.render('pages/admin');
 });
 
-// Mantenemos compatibilidad con el action del form anterior por si hay caché
 router.post('/dashboard', bypassAuth, (req, res) => {
     res.redirect('/admin');
 });
@@ -37,13 +36,25 @@ router.get('/logs/:service', bypassAuth, (req, res) => {
 
 router.post('/invitations', bypassAuth, async (req, res) => {
     try {
-        const newToken = await InvitationToken.create({});
+        const newToken = await InvitationCaretakerToken.create({});
         const protocol = req.protocol;
         const host = req.get('host');
         const url = `${protocol}://${host}/register/${newToken.token}`;
         res.status(201).json({ url, token: newToken.token });
     } catch (error) {
         res.status(500).json({ error: 'Fallo al generar el enlace de invitación.' });
+    }
+});
+
+router.post('/invitations/researcher', bypassAuth, async (req, res) => {
+    try {
+        const newToken = await InvitationResearcherToken.create({ role: 'researcher' });
+        const protocol = req.protocol;
+        const host = req.get('host');
+        const url = `${protocol}://${host}/researcher/register/${newToken.token}`;
+        res.status(201).json({ url, token: newToken.token });
+    } catch (error) {
+        res.status(500).json({ error: 'Fallo al generar el enlace de invitación para investigador.' });
     }
 });
 
