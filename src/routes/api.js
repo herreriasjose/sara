@@ -45,10 +45,18 @@ router.post('/researchers/register/:tokenId', async (req, res) => {
         auditLogger.logAccess('RESEARCHER_VAULT_CREATED', newResearcher._id, 'Admin_API');
 
         res.status(201).json({ status: 'success' });
+    // Reemplaza el bloque catch actual en router.post('/researchers/register/:tokenId', ...)
+
     } catch (error) {
         if (error.code === 11000) {
+            // Laconismo Técnico: Exposición directa del índice en colisión para auditoría.
+            console.error('\n[SARA-Vault] Colisión de Índice detectada (Error 11000):');
+            console.error(JSON.stringify(error.keyValue, null, 2));
+            
             return res.status(400).json({ error: 'El investigador ya existe en la Bóveda.' });
         }
+        
+        console.error('[SARA-Vault] Fallo de instanciación:', error);
         res.status(500).json({ error: 'Fallo en la instanciación de la Bóveda' });
     }
 });

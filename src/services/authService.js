@@ -1,3 +1,5 @@
+// src\services\authService.js
+
 const crypto = require('crypto');
 
 const SECRET = process.env.JWT_SECRET || 'sara_alostatic_shield_2027';

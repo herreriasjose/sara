@@ -12,13 +12,19 @@ const logFile = path.join(logDir, 'gateway.log');
 const originalLog = console.log;
 const originalError = console.error;
 
+const getLocalTimestamp = () => {
+    const now = new Date();
+    const tzOffsetMs = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, -1);
+};
+
 console.log = function (...args) {
-    fs.appendFileSync(logFile, `[${new Date().toISOString()}] INFO: ${args.join(' ')}\n`);
+    fs.appendFileSync(logFile, `[${getLocalTimestamp()}] INFO: ${args.join(' ')}\n`);
     originalLog.apply(console, args);
 };
 
 console.error = function (...args) {
-    fs.appendFileSync(logFile, `[${new Date().toISOString()}] ERROR: ${args.join(' ')}\n`);
+    fs.appendFileSync(logFile, `[${getLocalTimestamp()}] ERROR: ${args.join(' ')}\n`);
     originalError.apply(console, args);
 };
 
@@ -43,8 +49,13 @@ if (require.main === module) {
     const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/sara_dev';
 
     mongoose.connect(MONGO_URI)
-        .then(() => {
+        .then(async () => {
             console.log('Conectado a MongoDB Atlas con éxito.');
+            
+            // Sincronización destructiva de índices huérfanos para evitar colisiones 11000
+            await require('./models/Researcher').syncIndexes();
+            console.log('[SARA-DB] Índices sincronizados purgados.');
+            
             app.listen(PORT, () => console.log(`SARA-Gateway operando en el puerto ${PORT}`));
         })
         .catch(err => console.error('Error crítico al conectar a MongoDB:', err));

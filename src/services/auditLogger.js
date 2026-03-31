@@ -5,8 +5,14 @@ const path = require('node:path');
 
 const logPath = path.join(__dirname, '../../logs/accesses.log');
 
+const getLocalTimestamp = () => {
+    const now = new Date();
+    const tzOffsetMs = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, -1);
+};
+
 exports.logAccess = (action, targetId, actor = 'System') => {
-    const timestamp = new Date().toISOString();
+    const timestamp = getLocalTimestamp();
     const entry = `[${timestamp}] [AUDIT] Actor: ${actor} | Action: ${action} | Target: ${targetId}\n`;
     
     fs.appendFile(logPath, entry, (err) => {
