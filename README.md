@@ -3,6 +3,17 @@
 
 SARA es una arquitectura de **Evaluación Ecológica Momentaria (EMA)** de alto rendimiento diseñada para la detección precoz de la claudicación del cuidador familiar. El sistema opera bajo un paradigma de **analítica predictiva**, identificando la degradación de la resiliencia antes de que se produzca un fallo sistémico en el entorno de cuidados.
 
+## ✨ Desarrollo Asistido por IA
+
+El proyecto ha integrado herramientas de Inteligencia Artificial en las siguientes fases:
+
+* **Arquitectura:** Generación de código base y optimización en **Node.js** y **FastAPI**.
+* **Ciencia:** Refinamiento técnico del modelo de **Carga Alostática**.
+* **Datos:** Diseño de contratos y esquemas de validación con **Pydantic**.
+* **Textos:** Estructuración de documentación técnica y protocolos.
+
+> **Supervisión:** La lógica crítica, la seguridad de los datos y las decisiones éticas han sido auditadas y validadas por el equipo humano.
+
 ## 🧠 Marco Científico: El Modelo de Carga Alostática
 SARA operacionaliza la monitorización del estrés basándose en la **Teoría de la Carga Alostática (Bruce McEwen)**, sustituyendo los cuestionarios retrospectivos por datos en tiempo real con alta validez ecológica.
 
@@ -30,17 +41,6 @@ SARA implementa una arquitectura de **"Caja Negra"** para proteger la sensibilid
 1.  **Canal de Notificación (WhatsApp):** Utilizado exclusivamente para el envío de links efímeros tokenizados. Meta no tiene visibilidad sobre el estado emocional del usuario.
 2.  **Túnel de Captura (EJS/HTTPS):** Las respuestas a las micro-validaciones viajan por un túnel cifrado propietario directamente a la base de datos de investigación.
 3.  **Anonimización:** Uso de tokens HMAC para desacoplar la identidad del usuario de sus registros de salud en tránsito.
-
-## ✨ Desarrollo Asistido por IA
-
-El proyecto **SARA** ha integrado herramientas de Inteligencia Artificial en las siguientes fases:
-
-* **Arquitectura:** Generación de código base y optimización en **Node.js** y **FastAPI**.
-* **Ciencia:** Refinamiento técnico del modelo de **Carga Alostática**.
-* **Datos:** Diseño de contratos y esquemas de validación con **Pydantic**.
-* **Textos:** Estructuración de documentación técnica y protocolos.
-
-> **Supervisión:** La lógica crítica, la seguridad de los datos y las decisiones éticas han sido auditadas y validadas por el equipo humano.
 
 ## 🚀 Estado del Proyecto y Validación
 El sistema se encuentra en fase de validación técnica, priorizando la estabilidad del puente entre los servicios de Node.js y Python.
