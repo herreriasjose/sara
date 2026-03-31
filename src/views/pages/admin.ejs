@@ -1,29 +1,40 @@
-<!-- src\views\pages\admin.ejs -->
-
 <%- include('../layouts/main', { 
     title: 'SARA | Panel Investigador',
     body: `
     <div class="hero-section text-center rounded-3 shadow-sm p-5 bg-white">
-        <h1 class="display-5 fw-bold">Centro de Control JITAI</h1>
-        <p class="lead">Gestión de Bóveda y Monitorización Bayesiana</p>
+        <h1 class="display-5 fw-bold">Centro de Control</h1>
         <hr class="my-4">
         
         <div class="row text-start mt-4 g-4">
             <div class="col-md-6">
                 <div class="card h-100 border-primary shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-primary">Operaciones de Campo</h5>
+                        <h5 class="card-title text-primary">Invitaciones</h5>
                         <div class="d-grid gap-2 mt-3">
                             <button onclick="generateInvitationCaretaker()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Cuidador (1 Día)</button>
-                            <div id="inviteLinkContainer" class="alert alert-success d-none small p-2 text-break mt-1 mb-1"></div>
-                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa de Cuidador</a>
+                            <div id="inviteLinkCaretakerContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
+                            
                             <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
-                            <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
+                            <div id="inviteLinkResearcherContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
                         </div>
                     </div>
                 </div>
             </div>
             
+            <div class="col-md-6">
+                <div class="card h-100 border-primary shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">Acciones Administrativas</h5>
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa de Cuidador</a>
+                            <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row text-start mt-4 g-4">
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0 bg-light">
                     <div class="card-body">
@@ -35,14 +46,16 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="row text-start mt-4">
-            <div class="col-12">
+            
+            <div class="col-md-6">
                 <div class="card border-danger shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-danger">Gestión de Bóveda RGPD</h5>
+                        <h5 class="card-title text-danger">Gestión BD</h5>
                         <div class="mb-4 mt-3">
-                            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Bóveda (JSON)</a>
+                            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Cuidadores (JSON)</a>
+                        </div>
+                        <div class="mb-4 mt-3">
+                            <a href="/api/researchers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Investigadores (JSON)</a>
                         </div>
                         <hr>
                         <form id="deleteForm" onsubmit="deleteCaretaker(event)">
@@ -58,7 +71,23 @@
             </div>
         </div>
     </div>
+    
     <script>
+    async function copyToClipboard(text, btnElement) {
+        try {
+            await navigator.clipboard.writeText(text);
+            var originalHTML = btnElement.innerHTML;
+            btnElement.innerHTML = '✓ Copiado';
+            btnElement.classList.replace('btn-outline-secondary', 'btn-success');
+            setTimeout(function() {
+                btnElement.innerHTML = originalHTML;
+                btnElement.classList.replace('btn-success', 'btn-outline-secondary');
+            }, 2000);
+        } catch (err) {
+            console.error('Error al copiar al portapapeles: ', err);
+        }
+    }
+
     async function deleteCaretaker(event) {
         event.preventDefault();
         var extId = document.getElementById('deleteExternalId').value.trim();
@@ -79,7 +108,12 @@
     }
 
     async function generateInvitationCaretaker() {
-        var container = document.getElementById('inviteLinkContainer');
+        var container = document.getElementById('inviteLinkCaretakerContainer');
+        var oppositeContainer = document.getElementById('inviteLinkResearcherContainer');
+        
+        oppositeContainer.classList.add('d-none');
+        oppositeContainer.innerHTML = '';
+
         container.classList.remove('d-none', 'alert-success', 'alert-danger');
         container.classList.add('alert-info');
         container.innerText = 'Generando...';
@@ -89,8 +123,11 @@
             var data = await response.json();
             if (response.ok) {
                 container.classList.replace('alert-info', 'alert-success');
-                // Corrección: Concatenación clásica para evitar colisión de backticks con EJS
-                container.innerHTML = '<strong>Enlace de un solo uso:</strong><br><a href="' + data.url + '" target="_blank">' + data.url + '</a>';
+                container.innerHTML = '<strong>Enlace a alta de cuidador generada:</strong>' +
+                '<div class="input-group input-group-sm mt-1">' +
+                    '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
+                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(&apos;' + data.url + '&apos;, this)">📋 Copiar</button>' +
+                '</div>';
             } else {
                 container.classList.replace('alert-info', 'alert-danger');
                 container.innerText = 'Error al generar enlace.';
@@ -102,7 +139,12 @@
     }
 
     async function generateInvitationResearcher() {
-        var container = document.getElementById('inviteLinkContainer');
+        var container = document.getElementById('inviteLinkResearcherContainer');
+        var oppositeContainer = document.getElementById('inviteLinkCaretakerContainer');
+        
+        oppositeContainer.classList.add('d-none');
+        oppositeContainer.innerHTML = '';
+
         container.classList.remove('d-none', 'alert-success', 'alert-danger');
         container.classList.add('alert-info');
         container.innerText = 'Generando enlace cifrado...';
@@ -112,16 +154,19 @@
             var data = await response.json();
             if (response.ok) {
                 container.classList.replace('alert-info', 'alert-success');
-                container.innerHTML = '<strong>Acceso Investigador (Expira en 24h):</strong><br><a href="' + data.url + '" target="_blank">' + data.url + '</a>';
+                container.innerHTML = '<strong>Enlace a alta de investigador generada:</strong>' +
+                '<div class="input-group input-group-sm mt-1">' +
+                    '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
+                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(&apos;' + data.url + '&apos;, this)">📋 Copiar</button>' +
+                '</div>';
             } else {
                 container.classList.replace('alert-info', 'alert-danger');
                 container.innerText = 'Fallo en la generación de la semilla criptográfica.';
             }
         } catch (error) {
             container.classList.replace('alert-info', 'alert-danger');
-            container.innerText = 'Colapso de red o Gateway inaccesible.';
+            container.innerText = 'Error de red.';
         }
     }
-
     </script>
 ` }) %>

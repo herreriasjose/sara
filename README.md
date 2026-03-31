@@ -31,6 +31,17 @@ SARA implementa una arquitectura de **"Caja Negra"** para proteger la sensibilid
 2.  **Túnel de Captura (EJS/HTTPS):** Las respuestas a las micro-validaciones viajan por un túnel cifrado propietario directamente a la base de datos de investigación.
 3.  **Anonimización:** Uso de tokens HMAC para desacoplar la identidad del usuario de sus registros de salud en tránsito.
 
+## ✨ Desarrollo Asistido por IA
+
+El proyecto **SARA** ha integrado herramientas de Inteligencia Artificial en las siguientes fases:
+
+* **Arquitectura:** Generación de código base y optimización en **Node.js** y **FastAPI**.
+* **Ciencia:** Refinamiento técnico del modelo de **Carga Alostática**.
+* **Datos:** Diseño de contratos y esquemas de validación con **Pydantic**.
+* **Textos:** Estructuración de documentación técnica y protocolos.
+
+> **Supervisión:** La lógica crítica, la seguridad de los datos y las decisiones éticas han sido auditadas y validadas por el equipo humano.
+
 ## 🚀 Estado del Proyecto y Validación
 El sistema se encuentra en fase de validación técnica, priorizando la estabilidad del puente entre los servicios de Node.js y Python.
 * **Objetivo:** Alcanzar una adherencia superior al 80% en estudios longitudinales gracias a la eliminación de fricción en la captura de datos.
