@@ -1,4 +1,4 @@
-// src\routes\admin.js
+// src/routes/admin.js
 
 const express = require('express');
 const fs = require('fs');
@@ -6,22 +6,24 @@ const path = require('path');
 const router = express.Router();
 const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 const InvitationResearcherToken = require('../models/InvitationResearcherToken');
+const requireAuth = require('../middlewares/requireAuth');
 
-const bypassAuth = (req, res, next) => next();
-
-router.get('/', bypassAuth, (req, res) => {
+// Permitir acceso a la vista general tanto a investigadores como a administradores
+router.get('/', requireAuth(['admin', 'researcher']), (req, res) => {
     res.render('pages/admin');
 });
 
-router.post('/dashboard', bypassAuth, (req, res) => {
+// Redirección del dashboard
+router.post('/dashboard', requireAuth(['admin', 'researcher']), (req, res) => {
     res.redirect('/admin');
 });
 
-router.get('/register', bypassAuth, (req, res) => {
+// Paneles estrictos: Solo Admin
+router.get('/register', requireAuth(['admin']), (req, res) => {
     res.render('pages/admin-register-caretaker', { title: 'Panel de Control - Registro' });
 });
 
-router.get('/logs/:service', bypassAuth, (req, res) => {
+router.get('/logs/:service', requireAuth(['admin']), (req, res) => {
     const service = req.params.service;
     if (!['gateway', 'brain'].includes(service)) {
         return res.status(400).json({ error: 'Servicio no reconocido.' });
@@ -34,7 +36,7 @@ router.get('/logs/:service', bypassAuth, (req, res) => {
     res.json({ service, logs: lines.slice(-100) });
 });
 
-router.post('/invitations', bypassAuth, async (req, res) => {
+router.post('/invitations', requireAuth(['admin']), async (req, res) => {
     try {
         const newToken = await InvitationCaretakerToken.create({});
         const protocol = req.protocol;
@@ -46,7 +48,7 @@ router.post('/invitations', bypassAuth, async (req, res) => {
     }
 });
 
-router.post('/invitations/researcher', bypassAuth, async (req, res) => {
+router.post('/invitations/researcher', requireAuth(['admin']), async (req, res) => {
     try {
         const newToken = await InvitationResearcherToken.create({ role: 'researcher' });
         const protocol = req.protocol;

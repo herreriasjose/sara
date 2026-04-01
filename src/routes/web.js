@@ -51,4 +51,16 @@ router.get('/researcher/register/:tokenId', async (req, res) => {
     }
 });
 
+router.get('/login', (req, res) => {
+    res.render('pages/login', { title: 'SARA | Investigadores' });  
+});
+
+router.get('/login', (req, res) => {
+    if (req.cookies?.sara_session) {
+        return res.redirect('/admin');
+    }
+    res.render('pages/login', { title: 'SARA | Investigadores' });
+});
+
+
 module.exports = router;

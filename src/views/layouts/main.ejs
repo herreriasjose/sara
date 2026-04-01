@@ -1,3 +1,5 @@
+<!-- src\views\layouts\main.ejs -->
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +10,7 @@
     <style>
         body { background-color: #f8f9fa; color: #212529; }
         .hero-section { padding: 60px 0; background: #fff; border-bottom: 1px solid #dee2e6; }
+        .main-link { text-decoration: none; color: #fff; }
         .admin-login-link { font-size: 0.8rem; text-decoration: none; color: #adb5bd; }
         .admin-login-link:hover { color: #fff; }
     </style>
@@ -15,11 +18,20 @@
 <body>
     <nav class="navbar navbar-dark bg-dark">
         <div class="container d-flex justify-content-between">
-            <div>
-                <a href="/admin" class="admin-login-link">Acceso Investigador (Abierto)</a>
-            </div>
-            <span class="navbar-brand mb-0 h1">SARA | Sistema de Acompañamiento y Resiliencia Alostática</span>
+            <span class="navbar-brand mb-0 h1"><a href="/" class="main-link">SARA</a> | Sistema de Acompañamiento y Resiliencia Alostática</span>
             <div style="width: 100px;"></div>
+            <div>
+                <% if (locals.isAuthenticated) { %>
+                    <% if (locals.currentPath && !locals.currentPath.startsWith('/admin')) { %>
+                        <a href="/admin" class="admin-login-link me-3">Panel Investigadores</a>
+                    <% } %>
+                    <form action="/api/logout" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-link admin-login-link p-0 text-decoration-none shadow-none">Logout</button>
+                    </form>
+                <% } else { %>
+                    <a href="/login" class="admin-login-link">Acceso Investigador</a>
+                <% } %>
+            </div>
         </div>
     </nav>
 

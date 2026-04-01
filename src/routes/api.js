@@ -18,4 +18,7 @@ router.delete('/caretakers/:externalId', authController.deleteCaretaker);
 router.get('/researchers', researcherController.getAllResearchers);
 router.post('/researchers/register/:tokenId', authController.registerResearcher);
 
+router.post('/login', authController.loginResearcher);
+router.post('/logout', authController.logoutResearcher);
+
 module.exports = router;

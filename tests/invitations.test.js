@@ -1,4 +1,4 @@
-// tests\invitations.test.js
+// tests/invitations.test.js
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -7,9 +7,11 @@ const app = require('../src/server');
 const InvitationCaretakerToken = require('../src/models/InvitationCaretakerToken');
 const CaretakerIdentity = require('../src/models/CaretakerIdentity');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
+const { generateSessionToken } = require('../src/services/authService');
 
 let server;
 let baseUrl;
+let adminCookie;
 
 test.before(async () => {
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/sara_test';
@@ -21,6 +23,11 @@ test.before(async () => {
     await InvitationCaretakerToken.deleteMany({});
     await CaretakerIdentity.deleteMany({});
     await CaretakerClinical.deleteMany({});
+
+    // Generamos credencial efímera de administrador para sortear el RBAC
+    const mockAdminId = new mongoose.Types.ObjectId();
+    const tokenAdmin = generateSessionToken(mockAdminId, 'admin');
+    adminCookie = `sara_session=${tokenAdmin}; HttpOnly`;
 
     return new Promise((resolve) => {
         server = app.listen(0, () => {
@@ -40,7 +47,10 @@ test('Flujo de Bóveda: Invitaciones Efímeras y Consumo de Token', async (t) =>
     let activeToken = '';
 
     await t.test('1. POST /admin/invitations -> Genera token criptográfico y persiste en BD', async () => {
-        const res = await fetch(`${baseUrl}/admin/invitations`, { method: 'POST' });
+        const res = await fetch(`${baseUrl}/admin/invitations`, { 
+            method: 'POST',
+            headers: { 'Cookie': adminCookie } // Inyección de sesión Stateless
+        });
         assert.strictEqual(res.status, 201);
         
         const data = await res.json();

@@ -1,8 +1,11 @@
 // src\services\authService.js
 
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET || 'sara_alostatic_shield_2027';
+// Claves para el algoritmo RS256 (Asimétrico)
+const PRIVATE_KEY = process.env.JWT_PRIVATE_KEY || SECRET;
 
 /**
  * Genera un ID opaco determinista (SARA-ID)
@@ -49,4 +52,26 @@ exports.verifyPassword = (password, hash) => {
     const [salt, key] = hash.split(':');
     const derivedKey = crypto.scryptSync(password, salt, 64).toString('hex');
     return key === derivedKey;
+};
+
+exports.generateSessionToken = (userId, role) => {
+    const payload = { id: userId, role };
+    const options = {
+        expiresIn: '2h',
+        algorithm: process.env.JWT_PRIVATE_KEY ? 'RS256' : 'HS256'
+    };
+    return jwt.sign(payload, PRIVATE_KEY, options);
+};
+
+exports.setCookieSession = (res, token) => {
+    res.cookie('sara_session', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+        maxAge: 2 * 60 * 60 * 1000 // 2 horas
+    });
+};
+
+exports.clearCookieSession = (res) => {
+    res.clearCookie('sara_session');
 };

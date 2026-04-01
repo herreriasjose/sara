@@ -8,8 +8,8 @@ const Researcher = require('../models/Researcher');
 const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 const InvitationResearcherToken = require('../models/InvitationResearcherToken');
 const { encrypt, decrypt } = require('../services/encryptionService');
-const { generateBlindIndex, hashPassword } = require('../services/authService');
 const auditLogger = require('../services/auditLogger');
+const { generateBlindIndex, hashPassword, verifyPassword, generateSessionToken, setCookieSession, clearCookieSession } = require('../services/authService');
 
 function generateInternalId(phoneNumber) {
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
@@ -143,4 +143,33 @@ exports.deleteCaretaker = async (req, res) => {
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
+};
+
+exports.loginResearcher = async (req, res) => {
+try {
+const { email, password } = req.body;
+
+    const emailBlindIndex = generateBlindIndex(email);
+    const researcher = await Researcher.findOne({ emailBlindIndex });
+
+    if (!researcher || !verifyPassword(password, researcher.passwordHash)) {
+        auditLogger.logAccess('RESEARCHER_LOGIN_FAILED', emailBlindIndex, 'Unknown');
+        return res.status(401).json({ error: 'Credenciales inválidas o acceso denegado.' });
+    }
+
+    const token = generateSessionToken(researcher._id, researcher.role);
+    setCookieSession(res, token);
+    
+    auditLogger.logAccess('RESEARCHER_LOGIN_SUCCESS', researcher._id, researcher.role);
+
+    if (req.accepts('html')) return res.redirect('/admin');
+    res.status(200).json({ status: 'success', role: researcher.role });
+} catch (error) {
+    res.status(500).json({ error: 'Fallo en la resolución de la Bóveda.' });
+}
+};
+
+exports.logoutResearcher = (req, res) => {
+    clearCookieSession(res);
+    res.redirect('/login');
 };
