@@ -34,7 +34,9 @@ exports.submitEma = async (req, res) => {
                 }
             });
 
-            clinicalProfile.lastBurnoutProbability = encrypt(prediction.posteriorProbability || currentProb);
+            // Si Python falla o retorna null, mantenemos el Prior (currentProb)
+            clinicalProfile.lastBurnoutProbability = encrypt(prediction?.posteriorProbability ?? currentProb);
+            
             clinicalProfile.lastInteractionAt = new Date();
             clinicalProfile.streakCount += 1;
             await clinicalProfile.save();

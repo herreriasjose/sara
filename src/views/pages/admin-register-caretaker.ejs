@@ -26,9 +26,21 @@
                             <label class="form-label small fw-bold">Discapacidad Cuidador (%)</label>
                             <input type="number" name="caretakerDisabilityGrade" class="form-control form-control-sm" value="0" min="0" max="100">
                         </div>
-                        <div class="mb-3">
+                        <div class="col-12 mb-3">
                             <label class="form-label small fw-bold">Teléfono Móvil (WhatsApp)</label>
-                            <input type="tel" name="phoneNumber" class="form-control form-control-sm" placeholder="+34 600 000 000" pattern="^\\+?[0-9\\s\\-]{9,15}$" title="Debe contener entre 9 y 15 dígitos. Puede incluir el prefijo internacional (+)." required>
+                            <div class="input-group input-group-sm">
+                                <select name="prefix" class="form-select bg-light" style="max-width: 120px;" required>
+                                    <option value="+34" selected>+34 (ES)</option>
+                                    <option value="+52">+52 (MX)</option>
+                                    <option value="+54">+54 (AR)</option>
+                                    <option value="+56">+56 (CL)</option>
+                                    <option value="+57">+57 (CO)</option>
+                                    <option value="+51">+51 (PE)</option>
+                                    <option value="+1">+1 (US/CA)</option>
+                                </select>
+                                <input type="tel" name="phoneNumber" class="form-control" placeholder="600 000 000" pattern="^[0-9\s\-]{8,12}$" title="Introduce el número sin el prefijo internacional." required>
+                            </div>
+                            <div class="form-text" style="font-size: 0.7rem;">Canal exclusivo para el envío de los micro-formularios.</div>
                         </div>
                         <div class="row">
                             <div class="col-6 mb-3">

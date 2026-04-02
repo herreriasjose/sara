@@ -1,6 +1,8 @@
 
 // src/controllers/authController.js
 
+// src/controllers/authController.js
+
 const crypto = require('crypto');
 const StudyRequest = require('../models/StudyRequest');
 const CaretakerIdentity = require('../models/CaretakerIdentity');
@@ -12,19 +14,36 @@ const { encrypt, decrypt } = require('../services/encryptionService');
 const auditLogger = require('../services/auditLogger');
 const { generateBlindIndex, hashPassword, verifyPassword, generateSessionToken, setCookieSession, clearCookieSession } = require('../services/authService');
 
-function generateInternalId(phoneNumber) {
-    const normalizedPhone = phoneNumber.replace(/\D/g, '');
+// Sanitización E.164
+function formatE164(prefix, phone) {
+    const rawPhone = phone.trim();
+    
+    if (rawPhone.startsWith('+')) {
+        return '+' + rawPhone.replace(/\D/g, '');
+    }
+    
+    const cleanPrefix = prefix.replace(/[^\d+]/g, '');
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+    const finalPrefix = cleanPrefix.startsWith('+') ? cleanPrefix : `+${cleanPrefix}`;
+    
+    return `${finalPrefix}${cleanPhone}`;
+}
+
+// El hash opera sobre la cadena numérica global (ej: 34600111222) previniendo colisiones.
+function generateInternalId(e164Phone) {
+    const normalizedPhone = e164Phone.replace(/\D/g, '');
     const hash = crypto.createHash('sha256').update(normalizedPhone).digest('hex');
     return `SARA-${hash.substring(0, 12).toUpperCase()}`;
 }
 
 exports.submitStudyRequest = async (req, res) => {
     try {
-        const { alias, phone, email, descripcion } = req.body;
+        const { alias, prefix, phone, email, descripcion } = req.body;
         
         await StudyRequest.create({
             alias: alias.trim(),
-            phone: phone.trim(),
+            prefix: prefix ? prefix.trim() : '+34',
+            phone: phone.replace(/\D/g, ''),
             email: email ? email.trim() : undefined,
             descripcion: descripcion ? descripcion.trim() : undefined
         });
@@ -39,13 +58,14 @@ exports.submitStudyRequest = async (req, res) => {
 
 exports.registerCaretaker = async (req, res) => {
     try {
-        const { phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted, tokenId } = req.body;
+        const { prefix, phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted, tokenId } = req.body;
 
-        const externalId = generateInternalId(phoneNumber);
+        const e164Phone = formatE164(prefix || '+34', phoneNumber);
+        const externalId = generateInternalId(e164Phone);
 
         const identityData = {
             externalId,
-            phoneReal: encrypt(phoneNumber),
+            phoneReal: encrypt(e164Phone), // Persistencia E.164 para Twilio
             name: encrypt(name),
             email: email ? encrypt(email) : undefined,
             postalCode: encrypt(postalCode),
