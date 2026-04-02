@@ -36,6 +36,11 @@ Encargado de los cálculos.
 * **Contrato de Datos:** Validación estricta mediante modelos **Pydantic** para asegurar la integridad de las variables clínicas.
 * **Motor Analítico:** Generación de métricas sobre la trayectoria de fatiga y carga alostática acumulada.
 
+## 🧪 Estrategia de Validación y Testing Multi-Stack
+
+* **SARA-Gateway (`node:test`):** Uso exclusivo de la suite de pruebas nativa de Node.js v24 LTS.
+* **SARA-Brain (`pytest`):** Orquestación de pruebas unitarias y de integración sobre el motor analítico en FastAPI.
+
 ## 🔒 Protocolo de Privacidad y Soberanía del Dato
 SARA implementa una arquitectura de **"Caja Negra"** para proteger la sensibilidad de los datos de salud frente a plataformas de terceros:
 1.  **Canal de Notificación (WhatsApp):** Utilizado exclusivamente para el envío de links efímeros tokenizados. Meta no tiene visibilidad sobre el estado emocional del usuario.

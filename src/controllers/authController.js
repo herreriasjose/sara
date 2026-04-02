@@ -2,6 +2,7 @@
 // src/controllers/authController.js
 
 const crypto = require('crypto');
+const StudyRequest = require('../models/StudyRequest');
 const CaretakerIdentity = require('../models/CaretakerIdentity');
 const CaretakerClinical = require('../models/CaretakerClinical');
 const Researcher = require('../models/Researcher');
@@ -16,6 +17,25 @@ function generateInternalId(phoneNumber) {
     const hash = crypto.createHash('sha256').update(normalizedPhone).digest('hex');
     return `SARA-${hash.substring(0, 12).toUpperCase()}`;
 }
+
+exports.submitStudyRequest = async (req, res) => {
+    try {
+        const { alias, phone, email, descripcion } = req.body;
+        
+        await StudyRequest.create({
+            alias: alias.trim(),
+            phone: phone.trim(),
+            email: email ? email.trim() : undefined,
+            descripcion: descripcion ? descripcion.trim() : undefined
+        });
+
+        auditLogger.logAccess('STUDY_REQUEST_RECEIVED', 'PUBLIC_ENDPOINT', 'System');
+        res.redirect('/?status=solicitud_recibida');
+    } catch (error) {
+        console.error('[SARA-Gateway] Error en ingesta de solicitud:', error.message);
+        res.redirect('/?status=error_solicitud');
+    }
+};
 
 exports.registerCaretaker = async (req, res) => {
     try {

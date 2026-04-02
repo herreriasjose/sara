@@ -4,32 +4,74 @@
     title: 'SARA | Inicio',
     body: `
     <div class="hero-section text-center rounded-3 shadow-sm p-5 bg-white">
-        <h1 class="display-4 fw-bold text-primary">Proyecto SARA</h1>
-        <p class="lead mt-3">Sistema de Acompañamiento y Resiliencia Alostática</p>
+        <div class="mb-4">
+            <img src="/assets/img/main.jpg" 
+                alt="SARA - Interfaz de Acompañamiento" 
+                class="img-fluid rounded-3 shadow-sm" 
+                style="max-width: 1200px; width: 100%; height: auto;">
+        </div>
         <hr class="my-4">
         
         <div class="row justify-content-center text-start mt-4">
             <div class="col-md-8">
                 <p>SARA es un proyecto de investigación clínica diseñado para la detección precoz de la fatiga crónica y la prevención del síndrome del cuidador. Mediante micro-evaluaciones diarias de menos de 20 segundos, el sistema analiza tus niveles de energía y proporciona apoyo en los momentos de mayor necesidad.</p>
                 
-                <div class="card shadow-sm border-0 bg-light mt-5">
-                    <div class="card-body p-4">
-                        <h5 class="card-title text-center mb-4">Solicitud de Participación en el Estudio</h5>
-                        <form action="/solicitud-acceso" method="POST">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Nombre o Alias</label>
-                                <input type="text" name="alias" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Correo Electrónico o Teléfono</label>
-                                <input type="text" name="contacto" class="form-control" required>
-                            </div>
-                            <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-primary">Enviar Solicitud de Valoración</button>
-                            </div>
-                        </form>
+                ${ status === 'solicitud_recibida' ? `
+                    <div class="alert alert-success mt-5 p-4 text-center shadow-sm border-0" role="alert">
+                        <h4 class="alert-heading fw-bold mb-3">¡Solicitud Registrada!</h4>
+                        <p class="mb-0">Tu petición de valoración ha ingresado correctamente en nuestra bóveda segura. El equipo de investigación revisará tu caso y se pondrá en contacto contigo a través de los canales facilitados.</p>
                     </div>
-                </div>
+                ` : `
+                    <div class="card shadow-sm border-0 bg-light mt-5">
+                        <div class="card-body p-4">
+                            <h5 class="card-title text-center mb-4">Solicitud de Participación en el Estudio</h5>
+                            
+                            ${ status === 'error_solicitud' ? `
+                                <div class="alert alert-danger p-3 mb-4 small" role="alert">
+                                    <strong>Error en el sistema:</strong> No hemos podido procesar tu solicitud. Por favor, revisa los datos e inténtalo de nuevo.
+                                </div>
+                            ` : '' }
+
+                            <form action="/solicitud-acceso" method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Nombre o Alias</label>
+                                    <input type="text" name="alias" class="form-control" required minlength="2">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small fw-bold">Teléfono (WhatsApp)</label>
+                                        <div class="input-group">
+                                            <select name="prefix" class="form-select bg-light text-secondary border-end-0" style="max-width: 110px;" required>
+                                                <option value="+34" selected>+34 🇪🇸</option>
+                                                <option value="+52">+52 🇲🇽</option>
+                                                <option value="+54">+54 🇦🇷</option>
+                                                <option value="+57">+57 🇨🇴</option>
+                                                <option value="+56">+56 🇨🇱</option>
+                                                <option value="+51">+51 🇵🇪</option>
+                                                <option value="+1">+1 🇺🇸</option>
+                                            </select>
+                                            <input type="tel" name="phone" class="form-control" 
+                                                required 
+                                                pattern="^[0-9]{8,15}$" 
+                                                title="Introduce tu número sin el prefijo internacional">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label small fw-bold">Correo Electrónico (Opcional)</label>
+                                        <input type="email" name="email" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Cuéntanos algo sobre ti o tu situación (Opcional)</label>
+                                    <textarea name="descripcion" class="form-control" rows="3" maxlength="500"></textarea>
+                                </div>
+                                <div class="d-grid mt-4">
+                                    <button type="submit" class="btn btn-primary">Enviar Solicitud de Valoración</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `}
             </div>
         </div>
     </div>
