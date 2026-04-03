@@ -73,7 +73,16 @@ router.get('/login', (req, res) => {
     if (req.cookies?.sara_session) {
         return res.redirect('/admin');
     }
-    res.render('pages/login', { title: 'SARA | Investigadores' });
+    
+    // Captura el error para renderizado seguro
+    const errorMessage = req.query.error === 'auth' 
+        ? 'Credenciales erróneas o acceso denegado.' 
+        : null;
+
+    res.render('pages/login', { 
+        title: 'SARA | Investigadores',
+        error: errorMessage
+    });
 });
 
 module.exports = router;

@@ -186,27 +186,33 @@ exports.deleteCaretaker = async (req, res) => {
 };
 
 exports.loginResearcher = async (req, res) => {
-try {
-const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const emailBlindIndex = generateBlindIndex(email);
-    const researcher = await Researcher.findOne({ emailBlindIndex });
+        const emailBlindIndex = generateBlindIndex(email);
+        const researcher = await Researcher.findOne({ emailBlindIndex });
 
-    if (!researcher || !verifyPassword(password, researcher.passwordHash)) {
-        auditLogger.logAccess('RESEARCHER_LOGIN_FAILED', emailBlindIndex, 'Unknown');
-        return res.status(401).json({ error: 'Credenciales inválidas o acceso denegado.' });
+        if (!researcher || !verifyPassword(password, researcher.passwordHash)) {
+            auditLogger.logAccess('RESEARCHER_LOGIN_FAILED', emailBlindIndex, 'Unknown');
+            
+            // Detección de cliente web (SSR) vs API
+            if (req.accepts('html') && req.headers['content-type'] === 'application/x-www-form-urlencoded') {
+                return res.redirect('/login?error=auth');
+            }
+            return res.status(401).json({ error: 'Credenciales inválidas o acceso denegado.' });
+        }
+
+        const token = generateSessionToken(researcher._id, researcher.role);
+        setCookieSession(res, token);
+        
+        auditLogger.logAccess('RESEARCHER_LOGIN_SUCCESS', researcher._id, researcher.role);
+
+        if (req.accepts('html')) return res.redirect('/admin');
+        res.status(200).json({ status: 'success', role: researcher.role });
+    } catch (error) {
+        console.error('[SARA-Vault] Error en login:', error);
+        res.status(500).json({ error: 'Fallo en la resolución de la Bóveda.' });
     }
-
-    const token = generateSessionToken(researcher._id, researcher.role);
-    setCookieSession(res, token);
-    
-    auditLogger.logAccess('RESEARCHER_LOGIN_SUCCESS', researcher._id, researcher.role);
-
-    if (req.accepts('html')) return res.redirect('/admin');
-    res.status(200).json({ status: 'success', role: researcher.role });
-} catch (error) {
-    res.status(500).json({ error: 'Fallo en la resolución de la Bóveda.' });
-}
 };
 
 exports.logoutResearcher = (req, res) => {

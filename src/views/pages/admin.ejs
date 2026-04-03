@@ -9,11 +9,8 @@
             <div class="col-md-6">
                 <div class="card h-100 border-primary shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-primary">Invitaciones</h5>
+                        <h5 class="card-title text-primary">Investigadores</h5>
                         <div class="d-grid gap-2 mt-3">
-                            <button onclick="generateInvitationCaretaker()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Cuidador (1 Día)</button>
-                            <div id="inviteLinkCaretakerContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
-                            
                             <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
                             <div id="inviteLinkResearcherContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
                         </div>
@@ -26,7 +23,7 @@
                     <div class="card-body">
                         <h5 class="card-title text-primary">Acciones Administrativas</h5>
                         <div class="d-grid gap-2 mt-3">
-                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Administrativa de Cuidador</a>
+                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Manual Cuidador</a>
                             <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
                         </div>
                     </div>
@@ -59,7 +56,7 @@
                         </div>
                         <hr>
                         <form id="deleteForm" onsubmit="deleteCaretaker(event)">
-                            <label class="form-label small fw-bold">Anonimización Irreversible (Derecho al Olvido)</label>
+                            <label class="form-label small fw-bold">Anonimización Irreversible</label>
                             <div class="input-group input-group-sm w-75">
                                 <input type="text" id="deleteExternalId" class="form-control" placeholder="externalId" required>
                                 <button class="btn btn-danger" type="submit">Borrar Identidad</button>
@@ -70,6 +67,50 @@
                 </div>
             </div>
         </div>
+
+        <div class="row text-start mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 bg-white">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">Cola de Solicitudes (Triaje Clínico)</h5>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Nombre/Alias</th>
+                                        <th>Contacto</th>
+                                        <th>Descripción / Cuadro Clínico</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${locals.studyRequests && locals.studyRequests.length > 0 ? 
+                                        locals.studyRequests.map(r => {
+                                            const date = new Date(r.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                            const contact = r.prefix + ' ' + r.phone + (r.email ? '<br><span class="text-muted" style="font-size:0.75rem">' + r.email + '</span>' : '');
+                                            const desc = r.descripcion || '—';
+                                            const btn = r.status === 'pending' 
+                                                ? '<button onclick="inviteSpecificCaretaker(this.dataset.id, this)" data-id="' + r._id + '" class="btn btn-sm btn-outline-success w-100">Generar Alta</button>'
+                                                : '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
+                                                
+                                            return '<tr>' +
+                                                '<td>' + date + '</td>' +
+                                                '<td class="fw-bold">' + r.alias + '</td>' +
+                                                '<td>' + contact + '</td>' +
+                                                '<td><span class="text-truncate d-inline-block" style="max-width: 300px;" title="' + desc + '">' + desc + '</span></td>' +
+                                                '<td style="min-width: 140px;">' + btn + '</td>' +
+                                            '</tr>';
+                                        }).join('') 
+                                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay solicitudes en cola de triaje.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <script>
@@ -77,14 +118,37 @@
         try {
             await navigator.clipboard.writeText(text);
             var originalHTML = btnElement.innerHTML;
-            btnElement.innerHTML = '✓ Copiado';
+            btnElement.innerHTML = '✓';
             btnElement.classList.replace('btn-outline-secondary', 'btn-success');
             setTimeout(function() {
                 btnElement.innerHTML = originalHTML;
                 btnElement.classList.replace('btn-success', 'btn-outline-secondary');
             }, 2000);
         } catch (err) {
-            console.error('Error al copiar al portapapeles: ', err);
+            console.error('Error al copiar: ', err);
+        }
+    }
+
+    async function inviteSpecificCaretaker(id, btnElement) {
+        btnElement.innerHTML = 'Procesando...';
+        btnElement.disabled = true;
+        
+        try {
+            var response = await fetch('/admin/invitations/caretaker/' + id, { method: 'POST' });
+            var data = await response.json();
+            
+            if (response.ok) {
+                btnElement.outerHTML = '<div class="input-group input-group-sm">' +
+                    '<input type="text" class="form-control" value="' + data.url + '" readonly>' +
+                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
+                '</div>';
+            } else {
+                btnElement.innerHTML = 'Fallo';
+                btnElement.classList.replace('btn-outline-success', 'btn-danger');
+            }
+        } catch (error) {
+            btnElement.innerHTML = 'Error Red';
+            btnElement.classList.replace('btn-outline-success', 'btn-danger');
         }
     }
 
@@ -107,44 +171,8 @@
         }
     }
 
-    async function generateInvitationCaretaker() {
-        var container = document.getElementById('inviteLinkCaretakerContainer');
-        var oppositeContainer = document.getElementById('inviteLinkResearcherContainer');
-        
-        oppositeContainer.classList.add('d-none');
-        oppositeContainer.innerHTML = '';
-
-        container.classList.remove('d-none', 'alert-success', 'alert-danger');
-        container.classList.add('alert-info');
-        container.innerText = 'Generando...';
-        
-        try {
-            var response = await fetch('/admin/invitations', { method: 'POST' });
-            var data = await response.json();
-            if (response.ok) {
-                container.classList.replace('alert-info', 'alert-success');
-                container.innerHTML = '<strong>Enlace a alta de cuidador generada:</strong>' +
-                '<div class="input-group input-group-sm mt-1">' +
-                    '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
-                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(&apos;' + data.url + '&apos;, this)">📋 Copiar</button>' +
-                '</div>';
-            } else {
-                container.classList.replace('alert-info', 'alert-danger');
-                container.innerText = 'Error al generar enlace.';
-            }
-        } catch (error) {
-            container.classList.replace('alert-info', 'alert-danger');
-            container.innerText = 'Error de red.';
-        }
-    }
-
     async function generateInvitationResearcher() {
         var container = document.getElementById('inviteLinkResearcherContainer');
-        var oppositeContainer = document.getElementById('inviteLinkCaretakerContainer');
-        
-        oppositeContainer.classList.add('d-none');
-        oppositeContainer.innerHTML = '';
-
         container.classList.remove('d-none', 'alert-success', 'alert-danger');
         container.classList.add('alert-info');
         container.innerText = 'Generando enlace cifrado...';
@@ -154,14 +182,14 @@
             var data = await response.json();
             if (response.ok) {
                 container.classList.replace('alert-info', 'alert-success');
-                container.innerHTML = '<strong>Enlace a alta de investigador generada:</strong>' +
+                container.innerHTML = '<strong>Enlace investigador:</strong>' +
                 '<div class="input-group input-group-sm mt-1">' +
                     '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
-                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(&apos;' + data.url + '&apos;, this)">📋 Copiar</button>' +
+                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
                 '</div>';
             } else {
                 container.classList.replace('alert-info', 'alert-danger');
-                container.innerText = 'Fallo en la generación de la semilla criptográfica.';
+                container.innerText = 'Fallo criptográfico.';
             }
         } catch (error) {
             container.classList.replace('alert-info', 'alert-danger');

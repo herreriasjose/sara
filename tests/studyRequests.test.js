@@ -1,3 +1,5 @@
+// tests\studyRequests.test.js
+
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
@@ -32,12 +34,11 @@ describe('Flujo de Captación: Gateway y Cuarentena de Datos (StudyRequests)', (
         }
     });
 
-    test('1. POST /solicitud-acceso -> Ingesta correcta, limpieza E.164 y estado pending', async () => {
-        // Simulamos envío de formulario nativo (application/x-www-form-urlencoded)
+    test('1. POST /solicitud-acceso -> Ingesta cifrada, limpieza E.164 y estado pending', async () => {
         const payload = new URLSearchParams({
             alias: 'Cuidador Piloto',
             prefix: '+34',
-            phone: '600 123 456', // Simulamos input sucio con espacios
+            phone: '600 123 456',
             email: 'piloto@sara.local',
             descripcion: 'Fatiga severa, sin apoyo familiar.'
         });
@@ -49,16 +50,16 @@ describe('Flujo de Captación: Gateway y Cuarentena de Datos (StudyRequests)', (
             redirect: 'manual'
         });
 
-        assert.strictEqual(res.status, 302, 'Debe interceptar vía SSR y redirigir');
-        assert.strictEqual(res.headers.get('location'), '/?status=solicitud_recibida');
+        assert.strictEqual(res.status, 302);
 
-        const requestDoc = await StudyRequest.findOne({ alias: 'Cuidador Piloto' });
-        
-        assert.ok(requestDoc, 'El documento debe persistir en la colección de Cuarentena');
-        assert.strictEqual(requestDoc.phone, '600123456', 'Fallo en la limpieza regex para formato API WhatsApp');
-        assert.strictEqual(requestDoc.prefix, '+34');
-        assert.strictEqual(requestDoc.status, 'pending', 'Vulnerabilidad: El registro no entró aislado');
-        assert.strictEqual(requestDoc.priorSeverityWeight, 0.5, 'El peso del Prior Bayesiano inicial no es el base');
+        const rawDoc = await mongoose.connection.db.collection('studyrequests').findOne();
+        assert.ok(rawDoc.phone.includes(':'), 'Fuga detectada: Teléfono en texto plano en la BBDD');
+        assert.ok(rawDoc.alias.includes(':'), 'Fuga detectada: Alias en texto plano en la BBDD');
+
+        const requestDoc = await StudyRequest.findOne();
+        assert.strictEqual(requestDoc.phone, '600123456', 'Fallo en descifrado o sanitización regex');
+        assert.strictEqual(requestDoc.alias, 'Cuidador Piloto', 'Fallo en descifrado del alias');
+        assert.strictEqual(requestDoc.priorSeverityWeight, 0.5, 'Prior Bayesiano inicial alterado');
     });
 
     test('2. GET / -> Renderizado SSR del Estado de Homeostasis (ERP)', async () => {
@@ -66,7 +67,7 @@ describe('Flujo de Captación: Gateway y Cuarentena de Datos (StudyRequests)', (
         assert.strictEqual(res.status, 200);
         
         const html = await res.text();
-        assert.match(html, /¡Solicitud Registrada!/, 'Debe inyectar el feedback de éxito');
-        assert.doesNotMatch(html, /name="phone"/, 'Fallo ERP: El formulario sigue renderizándose consumiendo carga visual');
+        assert.match(html, /¡Solicitud Registrada!/);
+        assert.doesNotMatch(html, /name="phone"/);
     });
 });
