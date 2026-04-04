@@ -7,15 +7,38 @@ const router = express.Router();
 const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 const InvitationResearcherToken = require('../models/InvitationResearcherToken');
 const StudyRequest = require('../models/StudyRequest');
+const Researcher = require('../models/Researcher');
 const requireAuth = require('../middlewares/requireAuth');
+const encryptionService = require('../services/encryptionService'); // <-- Inyección del Vault
+
 
 router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
     try {
         const studyRequests = await StudyRequest.find().sort({ createdAt: 1 });
-        res.render('pages/admin', { studyRequests });
+        
+        // 1. Recuperar el documento en crudo (lean optimiza la memoria)
+        const researcherDoc = await Researcher.findById(req.user.id).lean();
+        
+        // 2. Hidratación y descifrado explícito en memoria (Zero-Persistence)
+        let fullUser = req.user;
+        if (researcherDoc) {
+            fullUser = {
+                ...researcherDoc,
+                firstName: encryptionService.decrypt(researcherDoc.firstName) || 'Anon',
+                lastName: encryptionService.decrypt(researcherDoc.lastName) || ''
+            };
+        }
+
+        res.render('pages/admin', { 
+            studyRequests,
+            user: fullUser 
+        });
     } catch (error) {
         console.error('[SARA-Admin] Error al recuperar la cola de solicitudes:', error);
-        res.render('pages/admin', { studyRequests: [] });
+        res.render('pages/admin', { 
+            studyRequests: [],
+            user: req.user
+        });
     }
 });
 
@@ -26,15 +49,22 @@ router.get('/register', requireAuth(['admin']), (req, res) => {
 });
 
 router.get('/logs/:service', requireAuth(['admin']), (req, res) => {
+    const allowedLogs = ['gateway', 'brain', 'accesses'];
     const service = req.params.service;
-    if (!['gateway', 'brain'].includes(service)) return res.status(400).json({ error: 'Servicio no reconocido.' });
+    
+    if (!allowedLogs.includes(service)) {
+        return res.status(403).json({ error: 'Violación de acceso: Servicio no autorizado.' });
+    }
     
     const logPath = path.join(__dirname, '../../logs', `${service}.log`);
-    if (!fs.existsSync(logPath)) return res.status(404).json({ error: 'Log no existe.' });
     
-    const content = fs.readFileSync(logPath, 'utf-8');
-    const lines = content.split('\n').filter(line => line.trim() !== '');
-    res.json({ service, logs: lines.slice(-100) });
+    if (!fs.existsSync(logPath)) {
+        return res.status(404).type('text/plain').send('[SARA_TELEMETRY] Archivo de log aún no inicializado.');
+    }
+    
+    // Delegación nativa al OS (Zero-Event-Loop-Blocking)
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.sendFile(logPath);
 });
 
 router.post('/invitations/caretaker/:id', requireAuth(['admin']), async (req, res) => {

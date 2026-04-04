@@ -1,5 +1,3 @@
-// src/middlewares/requireAuth.js
-
 const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
 
@@ -12,11 +10,8 @@ const requireAuth = (allowedRoles = []) => {
         const jwtToken = req.cookies?.sara_session;
         if (jwtToken) {
             try {
-                const decoded = jwt.verify(jwtToken, JWT_SECRET, { algorithms: ['RS256', 'HS256'] });
-                user = { id: decoded.id, role: decoded.role };
-            } catch (err) {
-                // Token inválido/expirado, user se mantiene null
-            }
+                user = jwt.verify(jwtToken, JWT_SECRET, { algorithms: ['RS256', 'HS256'] });
+            } catch (err) {}
         }
 
         const emaToken = req.headers['x-ema-token'] || req.query.token || req.params.token;
@@ -27,14 +22,22 @@ const requireAuth = (allowedRoles = []) => {
             }
         }
 
+        // Validación de existencia de usuario
         if (!user) {
-            return res.status(401).json({ error: 'Acceso Denegado. Credencial ausente/inválido.' });
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(401).json({ error: 'Acceso Denegado. Credencial ausente/inválido.' });
+            }
+            return res.redirect('/login?error=auth');
         }
 
         console.log(`[RBAC Debug] Request a ${req.originalUrl} | Rol Detectado: ${user.role} | Roles Permitidos: ${allowedRoles}`);
 
+        // Validación de permisos según rol
         if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-            return res.status(403).json({ error: 'Permisos insuficientes para el rol asignado.' });
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(403).json({ error: 'Permisos insuficientes para el rol asignado.' });
+            }
+            return res.redirect('/login?error=auth');
         }
 
         req.user = user;

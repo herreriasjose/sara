@@ -29,7 +29,7 @@ exports.getAllResearchers = async (req, res) => {
         });
 
         return res.status(200).json({ 
-            status: 'ok', 
+            status: 'success', 
             count: vaultDump.length,
             data: vaultDump 
         });

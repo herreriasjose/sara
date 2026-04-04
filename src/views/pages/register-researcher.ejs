@@ -7,8 +7,7 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-4">
             <div class="text-center mb-4">
-                <h2 class="h4 fw-bold">Configuración de Bóveda Investigador</h2>
-                <p class="text-muted small">Complete sus credenciales para acceder al panel de monitorización JITAI bajo los estándares de Privacidad por Diseño.</p>
+                <h2 class="h4 fw-bold">Alta de Investigador</h2>
             </div>
             
             <form id="researcherForm" class="sara-form">
@@ -26,7 +25,7 @@
                             <input type="text" id="lastName" class="form-control form-control-sm" required autocomplete="family-name">
                         </div>
                         <div class="col-12">
-                            <label for="alias" class="form-label small fw-bold">Alias (Visible para la díada en WhatsApp)</label>
+                            <label for="alias" class="form-label small fw-bold">Alias (Visible en WhatsApp)</label>
                             <input type="text" id="alias" class="form-control form-control-sm" placeholder="Ej. Dr. Martínez" required>
                         </div>
                     </div>
@@ -36,15 +35,15 @@
                     <h6 class="fw-bold border-bottom pb-2 text-primary">2. Contacto y Credenciales</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="email" class="form-label small fw-bold">Correo Institucional</label>
+                            <label for="email" class="form-label small fw-bold">Correo</label>
                             <input type="email" id="email" class="form-control form-control-sm" required autocomplete="email">
                         </div>
                         <div class="col-md-6">
-                            <label for="mobile" class="form-label small fw-bold">Móvil (Alertas JITAI)</label>
+                            <label for="mobile" class="form-label small fw-bold">Móvil (Alertas)</label>
                             <input type="tel" id="mobile" class="form-control form-control-sm" pattern="^\\+?[0-9\\s\\-]{9,15}$" title="Debe contener entre 9 y 15 dígitos." required autocomplete="tel">
                         </div>
                         <div class="col-md-6">
-                            <label for="password" class="form-label small fw-bold">Contraseña de Bóveda</label>
+                            <label for="password" class="form-label small fw-bold">Contraseña</label>
                             <input type="password" id="password" class="form-control form-control-sm" required 
                                 pattern="(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
                                 title="Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.">
@@ -53,23 +52,24 @@
                             <label for="confirmPassword" class="form-label small fw-bold">Confirmar Contraseña</label>
                             <input type="password" id="confirmPassword" class="form-control form-control-sm" required>
                         </div>
-                        <div class="col-12">
-                            <div class="form-text text-muted" style="font-size: 0.7rem;">
-                                La contraseña se cifra unidireccionalmente mediante un derivador de claves Scrypt nativo antes de su persistencia.
-                            </div>
-                        </div>
                     </div>
                 </div>
+                <div class="col-12">
+                            <div class="alert alert-secondary py-2 px-3 mt-3 mb-0 border-0 shadow-sm rounded bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <span class="fs-4 me-2 text-primary">🛡️</span>
+                                        <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                                            <strong>Privacidad por Diseño:</strong> Los datos introducidos se almacenan segregados y utilizando cifrado avanzado (AES-256). <strong>Bajo ninguna circunstancia</strong> su información será comercializada, compartida con terceros o utilizada para fines publicitarios.
+                                        </p>
+                                    </div>
+                                </div>
+                        </div>
 
-                <div id="statusMessage" style="display: none;" class="alert alert-info py-2 mb-3 text-center small fw-bold"></div>
+                <div id="statusMessage" style="display: none;" class="alert alert-info py-2 mt-3 mb-3 text-center small fw-bold"></div>
 
-                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">
-                    Inicializar Bóveda Investigador
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 mt-3 shadow-sm fw-bold">
+                    Darse de Alta
                 </button>
-                
-                <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.75rem;">
-                    SARA System v1.0 | Cifrado AES-256-GCM
-                </p>
             </form>
         </div>
     </div>

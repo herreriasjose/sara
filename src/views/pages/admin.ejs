@@ -5,6 +5,59 @@
         <h1 class="display-5 fw-bold">Administración</h1>
         <hr class="my-4">
         
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border shadow-sm text-start">
+            <div>
+                <h4 class="mb-0 text-primary fw-bold">${locals.user ? locals.user.firstName + ' ' + locals.user.lastName : 'Not found'}</h4>
+                <span class="badge bg-secondary mt-1">${locals.user ? locals.user.role : 'Not found'}</span>
+            </div>
+            <button class="btn btn-outline-dark btn-sm shadow-sm" data-id="${locals.user ? locals.user._id : ''}" onclick="openResearcherSettings(this)" title="Ajustes de Perfil">
+                ⚙️ Configuración
+            </button>
+        </div>
+
+         <div class="row text-start mt-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 bg-white">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">Solicitudes de cuidadores</h5>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-hover align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Nombre/Alias</th>
+                                        <th>Contacto</th>
+                                        <th>Comentarios</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${locals.studyRequests && locals.studyRequests.length > 0 ? 
+                                        locals.studyRequests.map(r => {
+                                            const date = new Date(r.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                            const contact = r.prefix + ' ' + r.phone + (r.email ? '<br><span class="text-muted" style="font-size:0.75rem">' + r.email + '</span>' : '');
+                                            const desc = r.descripcion || '—';
+                                            const btn = r.status === 'pending' 
+                                                ? '<button onclick="inviteSpecificCaretaker(this)" data-id="' + r._id + '" class="btn btn-sm btn-outline-success w-100">Generar Alta</button>'
+                                                : '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
+                                            
+                                            return '<tr>' +
+                                                '<td>' + date + '</td>' +
+                                                '<td class="fw-bold">' + r.alias + '</td>' +
+                                                '<td>' + contact + '</td>' +
+                                                '<td><span class="text-truncate d-inline-block" style="max-width: 300px;" title="' + desc + '">' + desc + '</span></td>' +
+                                                '<td style="min-width: 140px;">' + btn + '</td>' +
+                                            '</tr>';
+                                        }).join('') 
+                                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay solicitudes en cola de triaje.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="row text-start mt-4 g-4">
             <div class="col-md-6">
                 <div class="card h-100 border-primary shadow-sm">
@@ -32,28 +85,38 @@
         </div>
         
         <div class="row text-start mt-4 g-4">
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm border-0 bg-light">
-                    <div class="card-body">
-                        <h5 class="card-title">Estatus Técnico</h5>
-                        <ul class="list-unstyled small mt-3">
-                            <li><span class="badge bg-success me-2">Online</span> Node.js Gateway</li>
-                            <li><span class="badge bg-info me-2">Vault</span> Segregación Activa</li>
-                        </ul>
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Estatus Técnico</h5>
+                    <ul class="list-unstyled small mt-3">
+                        <li><span class="badge bg-success me-2">Online</span> Node.js Gateway</li>
+                        <li><span class="badge bg-info me-2">Vault</span> Segregación Activa</li>
+                    </ul>
+                    <hr class="text-secondary">
+                    <h6 class="small fw-bold text-muted mb-2">Logs</h6>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="accesses" onclick="openLogViewer(this)">
+                            📄 accesses.log
+                        </button>
+                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="brain" onclick="openLogViewer(this)">
+                            📄 brain.log
+                        </button>
+                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="gateway" onclick="openLogViewer(this)">
+                            📄 gateway.log
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-6">
+         </div>
+         <div class="col-md-6">
                 <div class="card border-danger shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title text-danger">Gestión BD</h5>
-                        <div class="mb-4 mt-3">
-                            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Cuidadores (JSON)</a>
-                        </div>
-                        <div class="mb-4 mt-3">
-                            <a href="/api/researchers" target="_blank" class="btn btn-outline-info btn-sm">📊 Recuperar Investigadores (JSON)</a>
-                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-4 mt-3">
+            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Cuidadores (JSON)</a>
+            <a href="/api/researchers" target="_blank" class="btn btn-outline-info btn-sm">📊 Investigadores (JSON)</a>
+        </div>
                         <hr>
                         <form id="deleteForm" onsubmit="deleteCaretaker(event)">
                             <label class="form-label small fw-bold">Anonimización Irreversible</label>
@@ -66,54 +129,19 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row text-start mt-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0 bg-white">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">Solicitudes de cuidadores</h5>
-                        <div class="table-responsive mt-3">
-                            <table class="table table-hover align-middle small">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Nombre/Alias</th>
-                                        <th>Contacto</th>
-                                        <th>Comentarios</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${locals.studyRequests && locals.studyRequests.length > 0 ? 
-                                        locals.studyRequests.map(r => {
-                                            const date = new Date(r.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                                            const contact = r.prefix + ' ' + r.phone + (r.email ? '<br><span class="text-muted" style="font-size:0.75rem">' + r.email + '</span>' : '');
-                                            const desc = r.descripcion || '—';
-                                            const btn = r.status === 'pending' 
-                                                ? '<button onclick="inviteSpecificCaretaker(this.dataset.id, this)" data-id="' + r._id + '" class="btn btn-sm btn-outline-success w-100">Generar Alta</button>'
-                                                : '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
-                                                
-                                            return '<tr>' +
-                                                '<td>' + date + '</td>' +
-                                                '<td class="fw-bold">' + r.alias + '</td>' +
-                                                '<td>' + contact + '</td>' +
-                                                '<td><span class="text-truncate d-inline-block" style="max-width: 300px;" title="' + desc + '">' + desc + '</span></td>' +
-                                                '<td style="min-width: 140px;">' + btn + '</td>' +
-                                            '</tr>';
-                                        }).join('') 
-                                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay solicitudes en cola de triaje.</td></tr>'}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+         </div>
     </div>
     
     <script>
+    function openResearcherSettings(element) {
+        const researcherId = element.dataset.id;
+        if (!researcherId) {
+            console.error('ID de investigador no disponible.');
+            return;
+        }
+        window.location.href = '/admin/researcher/' + researcherId + '/settings';
+    }
+
     async function copyToClipboard(text, btnElement) {
         try {
             await navigator.clipboard.writeText(text);
@@ -129,7 +157,8 @@
         }
     }
 
-    async function inviteSpecificCaretaker(id, btnElement) {
+    async function inviteSpecificCaretaker(btnElement) {
+        var id = btnElement.dataset.id;
         btnElement.innerHTML = 'Procesando...';
         btnElement.disabled = true;
         
@@ -169,6 +198,15 @@
         } catch (error) {
             alertBox.innerHTML = '<span class="text-danger small">✗ Error de conexión.</span>';
         }
+    }
+
+    async function openLogViewer(element) {
+    const logName = element.dataset.log;
+    if (!logName) {
+        console.error('Target log no definido en el nodo.');
+        return;
+    }
+    window.open('/admin/logs/' + logName, '_blank', 'noopener,noreferrer');
     }
 
     async function generateInvitationResearcher() {
