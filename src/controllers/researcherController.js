@@ -11,9 +11,10 @@ exports.getAllResearchers = async (req, res) => {
             try {
                 return {
                     id: doc._id,
-                    externalId: doc.externalId,
-                    email: doc.email ? decrypt(doc.email) : null,
-                    name: doc.name ? decrypt(doc.name) : null,
+                    alias: doc.alias,
+                    name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim(),
+                    email: doc.emailEncrypted ? decrypt(doc.emailEncrypted) : null,
+                    mobile: doc.mobile ? decrypt(doc.mobile) : null,
                     role: doc.role,
                     createdAt: doc.createdAt,
                     lastAccessAt: doc.lastAccessAt
@@ -21,7 +22,7 @@ exports.getAllResearchers = async (req, res) => {
             } catch (cryptoError) {
                 return {
                     id: doc._id,
-                    externalId: doc.externalId,
+                    alias: doc.alias,
                     error: 'Fallo de integridad en descifrado AES-256-GCM'
                 };
             }

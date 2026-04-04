@@ -1,21 +1,22 @@
 // tests/invitations.test.js
 
-const test = require('node:test');
+const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const mongoose = require('mongoose');
 const app = require('../src/server');
 const InvitationCaretakerToken = require('../src/models/InvitationCaretakerToken');
 const CaretakerIdentity = require('../src/models/CaretakerIdentity');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
-const StudyRequest = require('../src/models/StudyRequest'); // Requerido para el nuevo flujo
+const StudyRequest = require('../src/models/StudyRequest');
 const { generateSessionToken } = require('../src/services/authService');
 
 let server;
 let baseUrl;
 let adminCookie;
 
-test.before(async () => {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/sara_test';
+before(async () => {
+    // Aislamiento por PID para evitar condiciones de carrera en test runner concurrente
+    const mongoUri = process.env.MONGO_URI || `mongodb://localhost:27017/sara_test_${process.pid}`;
     
     if (mongoose.connection.readyState === 0) {
         await mongoose.connect(mongoUri);
@@ -38,10 +39,12 @@ test.before(async () => {
     });
 });
 
-test.after(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
+after(async () => {
     server.close();
+    if (mongoose.connection.readyState !== 0) {
+        await mongoose.connection.db.dropDatabase();
+        await mongoose.disconnect();
+    }
 });
 
 test('Flujo de Bóveda: Invitaciones Contextuales y Triaje', async (t) => {
@@ -64,7 +67,7 @@ test('Flujo de Bóveda: Invitaciones Contextuales y Triaje', async (t) => {
             headers: { 'Cookie': adminCookie }
         });
         
-        assert.strictEqual(res.status, 200); // Cambio de 201 a 200 en la refactorización contextual
+        assert.strictEqual(res.status, 200);
         
         const data = await res.json();
         assert.ok(data.token);
@@ -105,14 +108,13 @@ test('Flujo de Bóveda: Invitaciones Contextuales y Triaje', async (t) => {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Accept': 'application/json' // CRÍTICO: Evita la redirección SSR
+                'Accept': 'application/json'
             },
             body: JSON.stringify(payload)
         });
 
         assert.strictEqual(res.status, 201, 'El registro de API debe retornar 201 Created');
         
-        // Validación de seguridad: Consumo único del token
         const tokenCheck = await InvitationCaretakerToken.findOne({ token: activeToken });
         assert.strictEqual(tokenCheck, null, 'Fallo de seguridad: El token no fue destruido tras el alta');
     });

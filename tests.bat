@@ -15,7 +15,7 @@ powershell -NoProfile -Command "Get-ChildItem -Recurse | Where-Object { $_.FullN
 :: -----------------------------------------
 
 :: Limpieza de servidores y puertos anteriores
-taskkill /FI "WINDOWTITLE eq SARA-*" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SARA-Tests-*" /T /F >nul 2>&1
 
 :: 
 echo Iniciando pytest (FastAPI)...
