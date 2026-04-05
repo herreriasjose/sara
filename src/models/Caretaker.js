@@ -29,7 +29,9 @@ const CaretakerSchema = new mongoose.Schema({
     consentAccepted: { type: Boolean, required: true, default: false },
     lastBurnoutProbability: { type: String, required: true }, 
     lastInteractionAt: { type: Date },
-    streakCount: { type: Number, default: 0 }
+    streakCount: { type: Number, default: 0 },
+    registeredTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Researcher' }
+}, {
 }, { 
     timestamps: true 
 });

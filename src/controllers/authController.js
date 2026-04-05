@@ -65,11 +65,12 @@ exports.registerCaretaker = async (req, res) => {
 
         const identityData = {
             externalId,
-            phoneReal: encrypt(e164Phone), // Persistencia E.164 para Twilio
+            phoneReal: encrypt(e164Phone),
             name: encrypt(name),
             email: email ? encrypt(email) : undefined,
             postalCode: encrypt(postalCode),
-            consentAccepted: consentAccepted === 'true' || consentAccepted === true
+            consentAccepted: consentAccepted === 'true' || consentAccepted === true,
+            registeredTo: req.user ? req.user.id : undefined // Inyección de contexto de sesión
         };
 
         const clinicalData = {

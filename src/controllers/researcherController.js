@@ -2,6 +2,7 @@
 
 const Researcher = require('../models/Researcher');
 const { decrypt } = require('../services/encryptionService');
+const Caretaker = require('../models/Caretaker');
 
 exports.getAllResearchers = async (req, res) => {
     try {
@@ -37,5 +38,29 @@ exports.getAllResearchers = async (req, res) => {
     } catch (error) {
         console.error('[Vault] Error al recuperar bóveda de investigadores:', error.message);
         return res.status(500).json({ error: 'Colapso en la recuperación de identidades.' });
+    }
+};
+
+exports.assignCaretakerToResearcher = async (req, res) => {
+    try {
+        const { caretakerId, researcherId } = req.body;
+        
+        // El valor "" o undefined se normaliza a null para limpiar la asignación
+        const updateValue = researcherId || null;
+
+        const updatedCaretaker = await Caretaker.findByIdAndUpdate(
+            caretakerId,
+            { researcher: updateValue },
+            { new: true }
+        );
+
+        if (!updatedCaretaker) return res.status(404).json({ error: 'Cuidador no hallado.' });
+
+        return res.status(200).json({ 
+            status: 'success', 
+            message: 'Agrupación actualizada correctamente.' 
+        });
+    } catch (error) {
+        return res.status(500).json({ error: 'Fallo en la reasignación de cohorte.' });
     }
 };

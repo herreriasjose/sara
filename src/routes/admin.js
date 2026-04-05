@@ -8,37 +8,84 @@ const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 const InvitationResearcherToken = require('../models/InvitationResearcherToken');
 const StudyRequest = require('../models/StudyRequest');
 const Researcher = require('../models/Researcher');
+const CaretakerIdentity = require('../models/CaretakerIdentity'); // Alineación con el Vault
 const requireAuth = require('../middlewares/requireAuth');
-const encryptionService = require('../services/encryptionService'); // <-- Inyección del Vault
+const encryptionService = require('../services/encryptionService');
 
+const safeDecrypt = (val) => {
+    if (!val) return '';
+    try { 
+        const dec = encryptionService.decrypt(val);
+        return dec ? dec : val;
+    } catch (e) { 
+        return val; 
+    }
+};
 
 router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
     try {
-        const studyRequests = await StudyRequest.find().sort({ createdAt: 1 });
-        
-        // 1. Recuperar el documento en crudo (lean optimiza la memoria)
         const researcherDoc = await Researcher.findById(req.user.id).lean();
         
-        // 2. Hidratación y descifrado explícito en memoria (Zero-Persistence)
         let fullUser = req.user;
         if (researcherDoc) {
             fullUser = {
                 ...researcherDoc,
-                firstName: encryptionService.decrypt(researcherDoc.firstName) || 'Anon',
-                lastName: encryptionService.decrypt(researcherDoc.lastName) || ''
+                firstName: safeDecrypt(researcherDoc.firstName) || 'Anon',
+                lastName: safeDecrypt(researcherDoc.lastName) || ''
             };
         }
 
+        let viewData = [];
+
+        if (req.user.role === 'admin') {
+            const [requests, identities] = await Promise.all([
+                StudyRequest.find().sort({ createdAt: -1 }),
+                CaretakerIdentity.find().sort({ createdAt: -1 })
+            ]);
+
+            const mappedRequests = requests.map(r => ({
+                id: r._id,
+                type: 'request',
+                date: r.createdAt,
+                name: r.alias, 
+                contact: `${r.prefix} ${r.phone} ${r.email ? `<br><span class="text-muted" style="font-size:0.75rem">${r.email}</span>` : ''}`,
+                desc: r.descripcion || '—',
+                status: r.status
+            }));
+
+            const mappedCaretakers = identities.map(c => ({
+                id: c.externalId,
+                type: 'caretaker',
+                date: c.createdAt,
+                name: safeDecrypt(c.name),
+                contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
+                desc: 'Alta Consolidada (Vault)',
+                status: 'active'
+            }));
+
+            viewData = [...mappedRequests, ...mappedCaretakers].sort((a, b) => b.date - a.date);
+
+        } else if (req.user.role === 'researcher') {
+            const identities = await CaretakerIdentity.find({ registeredTo: req.user.id }).sort({ createdAt: -1 });
+            
+            viewData = identities.map(c => ({
+                id: c.externalId,
+                type: 'caretaker',
+                date: c.createdAt,
+                name: safeDecrypt(c.name),
+                contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
+                desc: 'Alta Consolidada (Vault)',
+                status: 'active'
+            }));
+        }
+
         res.render('pages/admin', { 
-            studyRequests,
+            tableData: viewData,
             user: fullUser 
         });
     } catch (error) {
-        console.error('[SARA-Admin] Error al recuperar la cola de solicitudes:', error);
-        res.render('pages/admin', { 
-            studyRequests: [],
-            user: req.user
-        });
+        console.error('[SARA-Admin] Colapso en renderizado de panel:', error);
+        res.render('pages/admin', { tableData: [], user: req.user });
     }
 });
 
@@ -62,7 +109,6 @@ router.get('/logs/:service', requireAuth(['admin']), (req, res) => {
         return res.status(404).type('text/plain').send('[SARA_TELEMETRY] Archivo de log aún no inicializado.');
     }
     
-    // Delegación nativa al OS (Zero-Event-Loop-Blocking)
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.sendFile(logPath);
 });
@@ -81,6 +127,18 @@ router.post('/invitations/caretaker/:id', requireAuth(['admin']), async (req, re
         res.status(200).json({ url, token: newToken.token });
     } catch (error) {
         console.error('[SARA-Admin] Error generando invitación contextual:', error);
+        res.status(500).json({ error: 'Fallo al procesar la invitación.' });
+    }
+});
+
+// Endpoint Agnóstico (Necesario para el Botón "Generar Alta")
+router.post('/invitations/caretaker', requireAuth(['admin', 'researcher']), async (req, res) => {
+    try {
+        const newToken = await InvitationCaretakerToken.create({});
+        const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
+        res.status(201).json({ url, token: newToken.token });
+    } catch (error) {
+        console.error('[SARA-Admin] Error generando invitación agnóstica:', error);
         res.status(500).json({ error: 'Fallo al procesar la invitación.' });
     }
 });
