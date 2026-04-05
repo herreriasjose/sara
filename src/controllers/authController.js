@@ -1,6 +1,3 @@
-
-// src/controllers/authController.js
-
 // src/controllers/authController.js
 
 const crypto = require('crypto');
@@ -14,22 +11,17 @@ const { encrypt, decrypt } = require('../services/encryptionService');
 const auditLogger = require('../services/auditLogger');
 const { generateBlindIndex, hashPassword, verifyPassword, generateSessionToken, setCookieSession, clearCookieSession } = require('../services/authService');
 
-// Sanitización E.164
 function formatE164(prefix, phone) {
     const rawPhone = phone.trim();
-    
     if (rawPhone.startsWith('+')) {
         return '+' + rawPhone.replace(/\D/g, '');
     }
-    
     const cleanPrefix = prefix.replace(/[^\d+]/g, '');
     const cleanPhone = rawPhone.replace(/\D/g, '');
     const finalPrefix = cleanPrefix.startsWith('+') ? cleanPrefix : `+${cleanPrefix}`;
-    
     return `${finalPrefix}${cleanPhone}`;
 }
 
-// El hash opera sobre la cadena numérica global (ej: 34600111222) previniendo colisiones.
 function generateInternalId(e164Phone) {
     const normalizedPhone = e164Phone.replace(/\D/g, '');
     const hash = crypto.createHash('sha256').update(normalizedPhone).digest('hex');
@@ -39,7 +31,6 @@ function generateInternalId(e164Phone) {
 exports.submitStudyRequest = async (req, res) => {
     try {
         const { alias, prefix, phone, email, descripcion } = req.body;
-        
         await StudyRequest.create({
             alias: alias.trim(),
             prefix: prefix ? prefix.trim() : '+34',
@@ -47,7 +38,6 @@ exports.submitStudyRequest = async (req, res) => {
             email: email ? email.trim() : undefined,
             descripcion: descripcion ? descripcion.trim() : undefined
         });
-
         auditLogger.logAccess('STUDY_REQUEST_RECEIVED', 'PUBLIC_ENDPOINT', 'System');
         res.redirect('/?status=solicitud_recibida');
     } catch (error) {
@@ -58,10 +48,32 @@ exports.submitStudyRequest = async (req, res) => {
 
 exports.registerCaretaker = async (req, res) => {
     try {
-        const { prefix, phoneNumber, name, email, postalCode, patientDisabilityGrade, caretakerDisabilityGrade, relationship, hasExternalSupport, age, gender, yearsCaregiving, patientAge, patientGender, burdenType, consentAccepted, tokenId } = req.body;
+        const { 
+            prefix, phoneNumber, name, email, postalCode, 
+            patientDisabilityGrade, caretakerDisabilityGrade, 
+            relationship, hasExternalSupport, age, gender, 
+            yearsCaregiving, patientAge, patientGender, 
+            burdenType, consentAccepted, tokenId 
+        } = req.body;
 
         const e164Phone = formatE164(prefix || '+34', phoneNumber);
         const externalId = generateInternalId(e164Phone);
+        
+        let assignedResearcher = null;
+
+        // Lógica de Trazabilidad: Recuperar origen de la invitación
+        if (tokenId) {
+            const tokenDoc = await InvitationCaretakerToken.findOne({ token: tokenId });
+            if (tokenDoc) {
+                assignedResearcher = tokenDoc.createdBy; // Puede ser el ID de un Researcher o null (Admin)
+                await InvitationCaretakerToken.deleteOne({ token: tokenId });
+                auditLogger.logAccess('TOKEN_CONSUMED', externalId, 'User_Registration');
+            }
+        } 
+        // Si es alta manual (el investigador está logado realizando la acción)
+        else if (req.user && req.user.role === 'researcher') {
+            assignedResearcher = req.user.id;
+        }
 
         const identityData = {
             externalId,
@@ -70,7 +82,7 @@ exports.registerCaretaker = async (req, res) => {
             email: email ? encrypt(email) : undefined,
             postalCode: encrypt(postalCode),
             consentAccepted: consentAccepted === 'true' || consentAccepted === true,
-            registeredTo: req.user ? req.user.id : undefined // Inyección de contexto de sesión
+            registeredTo: assignedResearcher // Vínculo de cohorte
         };
 
         const clinicalData = {
@@ -91,11 +103,6 @@ exports.registerCaretaker = async (req, res) => {
 
         await CaretakerIdentity.create(identityData);
         await CaretakerClinical.create(clinicalData);
-        
-        if (tokenId) {
-            await InvitationCaretakerToken.deleteOne({ token: tokenId });
-            auditLogger.logAccess('TOKEN_CONSUMED', externalId, 'User_Registration');
-        }
 
         auditLogger.logAccess('CREATE_VAULT', externalId, 'User_Registration');
 
@@ -109,7 +116,6 @@ exports.registerCaretaker = async (req, res) => {
 exports.registerResearcher = async (req, res) => {
     const { tokenId } = req.params;
     const { firstName, lastName, alias, email, mobile, password } = req.body;
-
     try {
         const tokenRecord = await InvitationResearcherToken.findOne({ token: tokenId });
         if (!tokenRecord) return res.status(403).json({ error: 'Token inválido o expirado' });
@@ -128,15 +134,9 @@ exports.registerResearcher = async (req, res) => {
         await newResearcher.save();
         await InvitationResearcherToken.deleteOne({ _id: tokenRecord._id });
         auditLogger.logAccess('RESEARCHER_VAULT_CREATED', newResearcher._id, 'Admin_API');
-
         res.status(201).json({ status: 'success' });
     } catch (error) {
-        if (error.code === 11000) {
-            console.error('\n[SARA-Vault] Colisión de Índice detectada (Error 11000):');
-            console.error(JSON.stringify(error.keyValue, null, 2));
-            return res.status(400).json({ error: 'El investigador ya existe en la Bóveda.' });
-        }
-        console.error('[SARA-Vault] Fallo de instanciación:', error);
+        if (error.code === 11000) return res.status(400).json({ error: 'El investigador ya existe.' });
         res.status(500).json({ error: 'Fallo en la instanciación de la Bóveda' });
     }
 };
@@ -144,10 +144,8 @@ exports.registerResearcher = async (req, res) => {
 exports.getAllCaretakers = async (req, res) => {
     try {
         auditLogger.logAccess('DECRYPT_BULK_READ', 'ALL_USERS', req.user ? req.user.role : 'Admin_API');
-
         const identities = await CaretakerIdentity.find({});
         const clinicals = await CaretakerClinical.find({});
-
         const decryptedList = identities.map(identity => {
             const clinical = clinicals.find(c => c.externalId === identity.externalId);
             return {
@@ -160,7 +158,6 @@ exports.getAllCaretakers = async (req, res) => {
                 streak: clinical ? clinical.streakCount : 0
             };
         });
-
         res.status(200).json({ status: 'success', count: decryptedList.length, data: decryptedList });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
@@ -170,17 +167,13 @@ exports.getAllCaretakers = async (req, res) => {
 exports.deleteCaretaker = async (req, res) => {
     try {
         const { externalId } = req.params;
-        
         await CaretakerIdentity.deleteOne({ externalId });
-        
         await CaretakerClinical.updateOne(
             { externalId }, 
             { $set: { externalId: `ANON-${crypto.randomBytes(8).toString('hex')}` } }
         );
-
         auditLogger.logAccess('IRREVERSIBLE_ANONYMIZATION', externalId, req.user ? req.user.role : 'Admin_API');
-
-        res.status(200).json({ status: 'success', message: 'Derecho al olvido ejecutado. Trayectoria clínica anonimizada.' });
+        res.status(200).json({ status: 'success', message: 'Derecho al olvido ejecutado.' });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
@@ -189,29 +182,21 @@ exports.deleteCaretaker = async (req, res) => {
 exports.loginResearcher = async (req, res) => {
     try {
         const { email, password } = req.body;
-
         const emailBlindIndex = generateBlindIndex(email);
         const researcher = await Researcher.findOne({ emailBlindIndex });
-
         if (!researcher || !verifyPassword(password, researcher.passwordHash)) {
             auditLogger.logAccess('RESEARCHER_LOGIN_FAILED', emailBlindIndex, 'Unknown');
-            
-            // Detección de cliente web (SSR) vs API
             if (req.accepts('html') && req.headers['content-type'] === 'application/x-www-form-urlencoded') {
                 return res.redirect('/login?error=auth');
             }
-            return res.status(401).json({ error: 'Credenciales inválidas o acceso denegado.' });
+            return res.status(401).json({ error: 'Credenciales inválidas.' });
         }
-
         const token = generateSessionToken(researcher._id, researcher.role);
         setCookieSession(res, token);
-        
         auditLogger.logAccess('RESEARCHER_LOGIN_SUCCESS', researcher._id, researcher.role);
-
         if (req.accepts('html')) return res.redirect('/admin');
         res.status(200).json({ status: 'success', role: researcher.role });
     } catch (error) {
-        console.error('[SARA-Vault] Error en login:', error);
         res.status(500).json({ error: 'Fallo en la resolución de la Bóveda.' });
     }
 };

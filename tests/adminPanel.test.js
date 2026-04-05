@@ -74,8 +74,8 @@ describe('Panel de Administración: RBAC, Trazabilidad y Generación Agnóstica'
         }
     });
 
-    test('1. POST /admin/invitations/caretaker -> Generación de token agnóstico', async () => {
-        const res = await fetch(baseUrl + '/admin/invitations/caretaker', {
+    test('1. POST /api/invitations/caretaker -> Generación de token agnóstico', async () => {
+        const res = await fetch(baseUrl + '/api/invitations/caretaker', {
             method: 'POST',
             headers: { 'Cookie': researcherCookie }
         });

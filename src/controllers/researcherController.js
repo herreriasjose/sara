@@ -3,6 +3,18 @@
 const Researcher = require('../models/Researcher');
 const { decrypt } = require('../services/encryptionService');
 const Caretaker = require('../models/Caretaker');
+const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
+
+exports.generateCaretakerInvitation = async (req, res) => {
+    try {
+        const newToken = await InvitationCaretakerToken.create({});
+        const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
+        return res.status(201).json({ url, token: newToken.token });
+    } catch (error) {
+        console.error('[SARA-API] Error generando invitación agnóstica:', error);
+        return res.status(500).json({ error: 'Fallo al procesar la invitación.' });
+    }
+};
 
 exports.getAllResearchers = async (req, res) => {
     try {

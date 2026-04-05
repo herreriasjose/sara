@@ -264,7 +264,7 @@
         node.disabled = true;
 
         try {
-            const response = await fetch('/admin/invitations/caretaker', { method: 'POST' });
+            const response = await fetch('/api/invitations/caretaker', { method: 'POST' });
             const data = await response.json();
             
             if (response.ok) {

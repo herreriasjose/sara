@@ -17,7 +17,12 @@ const invitationCaretakerTokenSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
         expires: TTL_SECONDS // Índice TTL nativo de MongoDB
-    }
+    },
+    createdBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Researcher',
+        default: null // null implica Admin
+}
 });
 
 module.exports = mongoose.model('InvitationCaretakerToken', invitationCaretakerTokenSchema);

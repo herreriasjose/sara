@@ -91,7 +91,7 @@ router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
 
 router.post('/dashboard', requireAuth(['admin', 'researcher']), (req, res) => res.redirect('/admin'));
 
-router.get('/register', requireAuth(['admin']), (req, res) => {
+router.get('/register', requireAuth(['admin', 'researcher']), (req, res) => {
     res.render('pages/admin-register-caretaker', { title: 'Panel de Control - Registro' });
 });
 
@@ -113,7 +113,7 @@ router.get('/logs/:service', requireAuth(['admin']), (req, res) => {
     res.sendFile(logPath);
 });
 
-router.post('/invitations/caretaker/:id', requireAuth(['admin']), async (req, res) => {
+router.post('/invitations/caretaker/:id', requireAuth(['admin', 'researcher']), async (req, res) => {
     try {
         const request = await StudyRequest.findById(req.params.id);
         if (!request) return res.status(404).json({ error: 'Solicitud no encontrada.' });
@@ -121,24 +121,14 @@ router.post('/invitations/caretaker/:id', requireAuth(['admin']), async (req, re
         request.status = 'sent';
         await request.save();
 
-        const newToken = await InvitationCaretakerToken.create({});
-        const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
+        // Persistimos quién genera la invitación
+        const newToken = await InvitationCaretakerToken.create({
+            createdBy: req.user.role === 'researcher' ? req.user.id : null
+        });
         
+        const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
         res.status(200).json({ url, token: newToken.token });
     } catch (error) {
-        console.error('[SARA-Admin] Error generando invitación contextual:', error);
-        res.status(500).json({ error: 'Fallo al procesar la invitación.' });
-    }
-});
-
-// Endpoint Agnóstico (Necesario para el Botón "Generar Alta")
-router.post('/invitations/caretaker', requireAuth(['admin', 'researcher']), async (req, res) => {
-    try {
-        const newToken = await InvitationCaretakerToken.create({});
-        const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
-        res.status(201).json({ url, token: newToken.token });
-    } catch (error) {
-        console.error('[SARA-Admin] Error generando invitación agnóstica:', error);
         res.status(500).json({ error: 'Fallo al procesar la invitación.' });
     }
 });

@@ -58,7 +58,7 @@ describe('Control de Acceso Basado en Roles (RBAC)', () => {
     });
 
     test('3. Investigador -> Acceso denegado (403) a rutas exclusivas de Admin', async () => {
-        const res = await fetch(`${baseUrl}/admin/register`, {
+        const res = await fetch(`${baseUrl}/admin/logs/gateway`, {
             headers: { 'Cookie': researcherCookie, 'Accept': 'application/json' }
         });
         assert.strictEqual(res.status, 403);
@@ -67,7 +67,7 @@ describe('Control de Acceso Basado en Roles (RBAC)', () => {
     });
 
     test('4. Administrador -> Acceso total a rutas restrictivas', async () => {
-        const res = await fetch(`${baseUrl}/admin/register`, {
+        const res = await fetch(`${baseUrl}/admin/logs/gateway`, {
             headers: { 'Cookie': adminCookie }
         });
         assert.strictEqual(res.status, 200);
