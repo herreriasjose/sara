@@ -22,7 +22,12 @@ const invitationCaretakerTokenSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Researcher',
         default: null // null implica Admin
-}
+    },
+    studyRequest: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'StudyRequest',
+        required: true 
+    }
 });
 
 module.exports = mongoose.model('InvitationCaretakerToken', invitationCaretakerTokenSchema);

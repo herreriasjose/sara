@@ -40,18 +40,13 @@
                         <div class="col-12 mb-3">
                             <label class="form-label small fw-bold">Teléfono Móvil (WhatsApp)</label>
                             <div class="input-group input-group-sm">
-                                <select name="prefix" class="form-select bg-light" style="max-width: 120px;" required>
-                                    <option value="+34" selected>+34 (ES)</option>
-                                    <option value="+52">+52 (MX)</option>
-                                    <option value="+54">+54 (AR)</option>
-                                    <option value="+56">+56 (CL)</option>
-                                    <option value="+57">+57 (CO)</option>
-                                    <option value="+51">+51 (PE)</option>
-                                    <option value="+1">+1 (US/CA)</option>
-                                </select>
-                                <input type="tel" name="phoneNumber" class="form-control" placeholder="600 000 000" pattern="^[0-9\s\-]{8,12}$" title="Introduce el número sin el prefijo internacional." required>
+                                <input type="text" class="form-control bg-light text-muted border-end-0" style="max-width: 80px;" value="${prefix}" readonly tabindex="-1">
+                                <input type="tel" class="form-control bg-light text-muted" value="${phone}" readonly tabindex="-1">
+                                
+                                <input type="hidden" name="prefix" value="${prefix}">
+                                <input type="hidden" name="phoneNumber" value="${phone}">
                             </div>
-                            <div class="form-text" style="font-size: 0.7rem;">Canal exclusivo para el envío de los micro-formularios.</div>
+                            <div class="form-text" style="font-size: 0.7rem;">Canal asignado desde triaje. No modificable.</div>
                         </div>
                     </div>
                 </div>
@@ -60,11 +55,11 @@
                     <h6 class="fw-bold border-bottom pb-2 text-primary">2. La Persona que Cuidas</h6>
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold">Edad Paciente</label>
+                            <label class="form-label small fw-bold">Edad</label>
                             <input type="number" name="patientAge" class="form-control form-control-sm" min="10" max="110" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold">Sexo Paciente</label>
+                            <label class="form-label small fw-bold">Sexo</label>
                             <select name="patientGender" class="form-select form-select-sm" required>
                                 <option value="" selected disabled>Selecciona...</option>
                                 <option value="female">Mujer</option>

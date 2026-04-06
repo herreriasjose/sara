@@ -74,19 +74,8 @@ describe('Panel de Administración: RBAC, Trazabilidad y Generación Agnóstica'
         }
     });
 
-    test('1. POST /api/invitations/caretaker -> Generación de token agnóstico', async () => {
-        const res = await fetch(baseUrl + '/api/invitations/caretaker', {
-            method: 'POST',
-            headers: { 'Cookie': researcherCookie }
-        });
-        
-        assert.strictEqual(res.status, 201);
-        const data = await res.json();
-        assert.ok(data.token, 'Debe emitir un token válido sin estar vinculado a un StudyRequest');
-        assert.ok(data.url.includes('/register/'), 'Debe retornar la URL de registro tokenizada');
-    });
 
-    test('2. Aislamiento RBAC -> Poblar Bóveda con identidades segregadas', async () => {
+    test('1. Aislamiento RBAC -> Poblar BD con identidades segregadas', async () => {
         await CaretakerIdentity.insertMany([
             {
                 externalId: 'SARA-ADMIN-1',
@@ -107,10 +96,10 @@ describe('Panel de Administración: RBAC, Trazabilidad y Generación Agnóstica'
         ]);
         
         const count = await CaretakerIdentity.countDocuments();
-        assert.strictEqual(count, 2, 'La bóveda debe contener ambos registros');
+        assert.strictEqual(count, 2, 'La BD debe contener ambos registros');
     });
 
-    test('3. GET /admin -> Admin visualiza el pool global (Ignora segregación)', async () => {
+    test('2. GET /admin -> Admin visualiza el pool global (Ignora segregación)', async () => {
         const res = await fetch(baseUrl + '/admin', {
             headers: { 'Cookie': adminCookie }
         });
@@ -122,7 +111,7 @@ describe('Panel de Administración: RBAC, Trazabilidad y Generación Agnóstica'
         assert.strictEqual(matchesActive.length, 2, 'El perfil admin debe renderizar todos los cuidadores de la colección');
     });
 
-    test('4. GET /admin -> Investigador visualiza estrictamente su cohorte', async () => {
+    test('3. GET /admin -> Investigador visualiza el pool global de cuidadores (Reducción de complejidad)', async () => {
         const res = await fetch(baseUrl + '/admin', {
             headers: { 'Cookie': researcherCookie }
         });
@@ -131,6 +120,7 @@ describe('Panel de Administración: RBAC, Trazabilidad y Generación Agnóstica'
         const html = await res.text();
         
         const matchesActive = html.match(/MONITORIZACIÓN ACTIVA/g) || [];
-        assert.strictEqual(matchesActive.length, 1, 'El perfil researcher solo debe renderizar la identidad vinculada a su id');
+        // Cambiamos la aserción de 1 a 2
+        assert.strictEqual(matchesActive.length, 2, 'El perfil researcher ahora debe renderizar la totalidad de cuidadores de la colección');
     });
 });

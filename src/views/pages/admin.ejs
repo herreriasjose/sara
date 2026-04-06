@@ -1,285 +1,327 @@
-<!-- src\views\pages\admin.ejs -->
+<%- include('../layouts/main', {
+title: 'SARA | Panel Investigador',
+body: `
 
-<%- include('../layouts/main', { 
-    title: 'SARA | Panel Investigador',
-    body: `
-    <div class="hero-section text-center rounded-3 shadow-sm p-5 bg-white">
-        <h1 class="display-5 fw-bold">Administración</h1>
-        <hr class="my-4">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border shadow-sm text-start">
-            <div>
-                <h4 class="mb-0 text-primary fw-bold">${locals.user ? locals.user.firstName + ' ' + locals.user.lastName : 'Not found'}</h4>
-                <span class="badge bg-secondary mt-1">${locals.user ? locals.user.role : 'Not found'}</span>
-            </div>
-            <button class="btn btn-outline-dark btn-sm shadow-sm" data-id="${locals.user ? locals.user._id : ''}" onclick="openResearcherSettings(this)" title="Ajustes de Perfil">
-                ⚙️ Configuración
-            </button>
-        </div>
+Administración
 
-         <div class="row text-start mt-4">
-            <div class="col-12">
-                <div class="card shadow-sm border-0 bg-white">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">Cuidadores</h5>
-                        <div class="table-responsive mt-3">
-                            <table class="table table-hover align-middle small">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Nombre/Alias</th>
-                                        <th>Contacto</th>
-                                        <th>Comentarios</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${locals.tableData && locals.tableData.length > 0 ? 
-                                        locals.tableData.map(r => {
-                                            const date = new Date(r.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                                            
-                                            let btnUI = '';
-                                            if (r.type === 'request' && r.status === 'pending') {
-                                                btnUI = '<button onclick="inviteSpecificCaretaker(this)" data-id="' + r.id + '" class="btn btn-sm btn-outline-success w-100">Generar Alta</button>';
-                                            } else if (r.type === 'request') {
-                                                btnUI = '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
-                                            } else {
-                                                btnUI = '<span class="badge bg-primary w-100 py-2 shadow-sm">MONITORIZACIÓN ACTIVA</span>';
-                                            }
-                                            
-                                            return '<tr>' +
-                                                '<td>' + date + '</td>' +
-                                                '<td class="fw-bold text-dark">' + r.name + '</td>' +
-                                                '<td>' + r.contact + '</td>' +
-                                                '<td><span class="text-truncate d-inline-block text-muted" style="max-width: 300px;" title="' + r.desc + '">' + r.desc + '</span></td>' +
-                                                '<td style="min-width: 140px;">' + btnUI + '</td>' +
-                                            '</tr>';
-                                        }).join('') 
-                                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay registros asignados en la cohorte.</td></tr>'}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border shadow-sm text-start">
+        <div>
+            <h4 class="mb-0 text-primary fw-bold">${locals.user ? locals.user.firstName + ' ' + locals.user.lastName : 'Not found'}</h4>
+            <span class="badge bg-secondary mt-1">${locals.user ? locals.user.role : 'Not found'}</span>
         </div>
-        
-        <div class="row text-start mt-4 g-4">
-            <div class="col-md-6">
-                <div class="card h-100 border-primary shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">Investigadores</h5>
-                        <div class="d-grid gap-2 mt-3">
-                            <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
-                            <div id="inviteLinkResearcherContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6">
-                <div class="card h-100 border-primary shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">Acciones Administrativas</h5>
-                        <div class="d-grid gap-2 mt-3">
-                            <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Manual de un Cuidador</a>
-                            <button type="button" class="btn btn-outline-success btn-sm mt-2" data-researcher="${locals.user ? locals.user._id : ''}" onclick="handleGenerarAlta(this)">Generar Alta</button>
-                            <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Envío EMA (20s)</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row text-start mt-4 g-4">
-        <div class="col-md-6">
-            <div class="card h-100 shadow-sm border-0 bg-light">
+        <button class="btn btn-outline-dark btn-sm shadow-sm" data-id="${locals.user ? locals.user._id : ''}" onclick="openResearcherSettings(this)" title="Ajustes de Perfil">
+            ⚙️ Configuración
+        </button>
+    </div>
+
+    <div class="row text-start mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 bg-white">
                 <div class="card-body">
-                    <h5 class="card-title">Estatus Técnico</h5>
-                    <ul class="list-unstyled small mt-3">
-                        <li><span class="badge bg-success me-2">Online</span> Node.js Gateway</li>
-                        <li><span class="badge bg-info me-2">Vault</span> Segregación Activa</li>
-                    </ul>
-                    <hr class="text-secondary">
-                    <h6 class="small fw-bold text-muted mb-2">Logs</h6>
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="accesses" onclick="openLogViewer(this)">
-                            📄 accesses.log
-                        </button>
-                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="brain" onclick="openLogViewer(this)">
-                            📄 brain.log
-                        </button>
-                        <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="gateway" onclick="openLogViewer(this)">
-                            📄 gateway.log
-                        </button>
-                    </div>
-                </div>
-            </div>
-         </div>
-         <div class="col-md-6">
-                <div class="card border-danger shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-danger">Gestión BD</h5>
-                        <div class="d-flex flex-wrap gap-2 mb-4 mt-3">
-            <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Cuidadores (JSON)</a>
-            <a href="/api/researchers" target="_blank" class="btn btn-outline-info btn-sm">📊 Investigadores (JSON)</a>
+                    
+                    <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold text-primary" id="cuidadores-tab" data-bs-toggle="tab" data-bs-target="#cuidadores-pane" type="button" role="tab" aria-controls="cuidadores-pane" aria-selected="true">Cuidadores Activos</button>
+    </li>
+    ${locals.user && locals.user.role === 'admin' ? `
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold text-primary" id="invitaciones-tab" data-bs-toggle="tab" data-bs-target="#invitaciones-pane" type="button" role="tab" aria-controls="invitaciones-pane" aria-selected="false">Solicitudes de Valoración</button>
+    </li>
+    ` : ''}
+</ul>
+
+<div class="tab-content" id="adminTabsContent">
+    <div class="tab-pane fade show active" id="cuidadores-pane" role="tabpanel" aria-labelledby="cuidadores-tab">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha Alta</th>
+                        <th>Nombre/Alias</th>
+                        <th>Contacto</th>
+                        <th>Estatus Clínico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${locals.cuidadores && locals.cuidadores.length > 0 ? 
+                        locals.cuidadores.map(c => {
+                            const date = new Date(c.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            return '<tr>' +
+                                '<td>' + date + '</td>' +
+                                '<td class="fw-bold text-dark">' + c.name + '</td>' +
+                                '<td>' + c.contact + '</td>' +
+                                '<td style="min-width: 140px;"><span class="badge bg-primary w-100 py-2 shadow-sm">MONITORIZACIÓN ACTIVA</span></td>' +
+                            '</tr>';
+                        }).join('') 
+                    : '<tr><td colspan="4" class="text-center text-muted py-4">No hay cuidadores consolidados en la cohorte.</td></tr>'}
+                </tbody>
+            </table>
         </div>
-                        <hr>
-                        <form id="deleteForm" onsubmit="deleteCaretaker(event)">
-                            <label class="form-label small fw-bold">Borrado</label>
-                            <div class="input-group input-group-sm w-75">
-                                <input type="text" id="deleteExternalId" class="form-control" placeholder="externalId" required>
-                                <button class="btn btn-danger" type="submit">Borrar Identidad</button>
-                            </div>
-                            <div class="col-12">
-                                <div class="alert alert-secondary py-2 px-3 mt-3 mb-0 border-0 shadow-sm rounded bg-light">
-                                    <div class="d-flex align-items-center">
-                                        <span class="fs-4 me-2 text-primary">🛡️</span>
-                                        <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">
-                                            <strong>Privacidad por Diseño y Derecho al Olvido:</strong> Los datos se almacenan cifrados mediante <strong>AES-256</strong>. Cualquier solicitud de baja activa un protocolo de <strong>borrado físico inmediato y definitivo</strong> del registro. Este proceso es <strong>irreversible</strong>: no se mantienen copias de seguridad ni metadatos tras la eliminación, garantizando que la información desaparezca permanentemente del ecosistema SARA.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="deleteAlert" class="form-text mt-2"></div>
-                        </form>
-                    </div>
+    </div>
+
+    ${locals.user && locals.user.role === 'admin' ? `
+    <div class="tab-pane fade" id="invitaciones-pane" role="tabpanel" aria-labelledby="invitaciones-tab">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha Recepción</th>
+                        <th>Nombre/Alias</th>
+                        <th>Contacto Triaje</th>
+                        <th>Comentarios</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${locals.invitaciones && locals.invitaciones.length > 0 ? 
+                        locals.invitaciones.map(r => {
+                            const date = new Date(r.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            
+                            let btnUI = '';
+                            if (r.status === 'pending') {
+                                btnUI = '<button onclick="inviteSpecificCaretaker(this)" data-id="' + r.id + '" class="btn btn-sm btn-outline-success w-100">Generar Enlace Seguro</button>';
+                            } else if (r.status === 'sent') {
+                                btnUI = '<div class="d-flex gap-1 align-items-center w-100">' +
+                                        '<span class="badge bg-info w-100 py-2">ESTADO: ENVIADO</span>' +
+                                        '<button onclick="resendInvitation(this)" data-id="' + r.id + '" class="btn btn-sm btn-outline-dark" title="Generar nuevo enlace">↻ RESEND</button>' +
+                                        '</div>';
+                            } else {
+                                btnUI = '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
+                            }
+                            
+                            return '<tr>' +
+                                '<td>' + date + '</td>' +
+                                '<td class="fw-bold text-dark">' + r.name + '</td>' +
+                                '<td>' + r.contact + '</td>' +
+                                '<td><span class="text-truncate d-inline-block text-muted" style="max-width: 300px;" title="' + r.desc + '">' + r.desc + '</span></td>' +
+                                '<td style="min-width: 140px;">' + btnUI + '</td>' +
+                            '</tr>';
+                        }).join('') 
+                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay solicitudes pendientes de validación.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    ` : ''}
+</div>
+
                 </div>
             </div>
-         </div>
+        </div>
     </div>
     
-    <script>
-    function openResearcherSettings(element) {
-        const researcherId = element.dataset.id;
-        if (!researcherId) {
-            console.error('ID de investigador no disponible.');
-            return;
-        }
-        window.location.href = '/admin/researcher/' + researcherId + '/settings';
-    }
+    <div class="row text-start mt-4 g-4">
+        <div class="col-md-6">
+            <div class="card h-100 border-primary shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Gestión Cuidadores</h5>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Manual de un Cuidador</a>
+                        <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Formulario EMA (20s)</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+    ${locals.user && locals.user.role === 'admin' ? `
+        <div class="card h-100 border-primary shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title text-primary">Gestión Investigadores</h5>
+                <div class="d-grid gap-2 mt-3">
+                    <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
+                    <div id="inviteLinkResearcherContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
+                </div>
+            </div>
+        </div>
+    ` : ''}
+</div>
+    </div>
+    
+    <div class="row text-start mt-4 g-4">
+    <div class="col-md-6">
+    ${locals.user && locals.user.role === 'admin' ? `
+        <div class="card h-100 shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h5 class="card-title">Estatus Técnico</h5>
+                <ul class="list-unstyled small mt-3">
+                    <li><span class="badge bg-success me-2">Online</span> Node.js Gateway</li>
+                    <li><span class="badge bg-info me-2">Vault</span> Segregación Activa</li>
+                </ul>
+                <hr class="text-secondary">
+                <h6 class="small fw-bold text-muted mb-2">Logs</h6>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="accesses" onclick="openLogViewer(this)">
+                        📄 accesses.log
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="brain" onclick="openLogViewer(this)">
+                        📄 brain.log
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm text-start shadow-sm" data-log="gateway" onclick="openLogViewer(this)">
+                        📄 gateway.log
+                    </button>
+                </div>
+            </div>
+        </div>
+    ` : ''}
+</div>
+<div class="col-md-6">
+    ${locals.user && locals.user.role === 'admin' ? `
+        <div class="card border-danger shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Gestión BD</h5>
+                <div class="d-flex flex-wrap gap-2 mb-4 mt-3">
+                    <a href="/api/caretakers" target="_blank" class="btn btn-outline-info btn-sm">📊 Cuidadores (JSON)</a>
+                    <a href="/api/researchers" target="_blank" class="btn btn-outline-info btn-sm">📊 Investigadores (JSON)</a>
+                </div>
+                <hr>
+                <form id="deleteForm" onsubmit="deleteCaretaker(event)">
+                    <label class="form-label small fw-bold">Borrado</label>
+                    <div class="input-group input-group-sm w-75">
+                        <input type="text" id="deleteExternalId" class="form-control" placeholder="externalId" required>
+                        <button class="btn btn-danger" type="submit">Borrar Identidad</button>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-secondary py-2 px-3 mt-3 mb-0 border-0 shadow-sm rounded bg-light">
+                            <div class="d-flex align-items-center">
+                                <span class="fs-4 me-2 text-primary">🛡️</span>
+                                <p class="small text-muted mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                                    <strong>Privacidad por Diseño y Derecho al Olvido:</strong> Los datos se almacenan cifrados mediante <strong>AES-256</strong>. Cualquier solicitud de baja activa un protocolo de <strong>borrado físico inmediato y definitivo</strong> del registro. Este proceso es <strong>irreversible</strong>: no se mantienen copias de seguridad ni metadatos tras la eliminación, garantizando que la información desaparezca permanentemente del ecosistema SARA.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="deleteAlert" class="form-text mt-2"></div>
+                </form>
+            </div>
+        </div>
+    ` : ''}
+</div>
+     </div>
+</div>
 
-    async function copyToClipboard(text, btnElement) {
-        try {
-            await navigator.clipboard.writeText(text);
-            var originalHTML = btnElement.innerHTML;
-            btnElement.innerHTML = '✓';
-            btnElement.classList.replace('btn-outline-secondary', 'btn-success');
-            setTimeout(function() {
-                btnElement.innerHTML = originalHTML;
-                btnElement.classList.replace('btn-success', 'btn-outline-secondary');
-            }, 2000);
-        } catch (err) {
-            console.error('Error al copiar: ', err);
-        }
-    }
-
-    async function inviteSpecificCaretaker(btnElement) {
-        var id = btnElement.dataset.id;
-        btnElement.innerHTML = 'Procesando...';
-        btnElement.disabled = true;
-        
-        try {
-            var response = await fetch('/admin/invitations/caretaker/' + id, { method: 'POST' });
-            var data = await response.json();
-            
-            if (response.ok) {
-                btnElement.outerHTML = '<div class="input-group input-group-sm">' +
-                    '<input type="text" class="form-control" value="' + data.url + '" readonly>' +
-                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
-                '</div>';
-            } else {
-                btnElement.innerHTML = 'Fallo';
-                btnElement.classList.replace('btn-outline-success', 'btn-danger');
-            }
-        } catch (error) {
-            btnElement.innerHTML = 'Error Red';
-            btnElement.classList.replace('btn-outline-success', 'btn-danger');
-        }
-    }
-
-    async function deleteCaretaker(event) {
-        event.preventDefault();
-        var extId = document.getElementById('deleteExternalId').value.trim();
-        var alertBox = document.getElementById('deleteAlert');
-        alertBox.innerHTML = '<span class="text-muted small">Procesando...</span>';
-        try {
-            var response = await fetch('/api/caretakers/' + extId, { method: 'DELETE' });
-            var data = await response.json();
-            if (response.ok) {
-                alertBox.innerHTML = '<span class="text-success small fw-bold">✓ ' + data.message + '</span>';
-                document.getElementById('deleteExternalId').value = '';
-            } else {
-                alertBox.innerHTML = '<span class="text-danger small">✗ ' + (data.message || data.error) + '</span>';
-            }
-        } catch (error) {
-            alertBox.innerHTML = '<span class="text-danger small">✗ Error de conexión.</span>';
-        }
-    }
-
-    async function openLogViewer(element) {
-    const logName = element.dataset.log;
-    if (!logName) {
-        console.error('Target log no definido en el nodo.');
+<script>
+function openResearcherSettings(element) {
+    const researcherId = element.dataset.id;
+    if (!researcherId) {
+        console.error('ID de investigador no disponible.');
         return;
     }
-    window.open('/admin/logs/' + logName, '_blank', 'noopener,noreferrer');
-    }
+    window.location.href = '/admin/researcher/' + researcherId + '/settings';
+}
 
-    async function generateInvitationResearcher() {
-        var container = document.getElementById('inviteLinkResearcherContainer');
-        container.classList.remove('d-none', 'alert-success', 'alert-danger');
-        container.classList.add('alert-info');
-        container.innerText = 'Generando enlace cifrado...';
+async function copyToClipboard(text, btnElement) {
+    try {
+        await navigator.clipboard.writeText(text);
+        var originalHTML = btnElement.innerHTML;
+        btnElement.innerHTML = '✓';
+        btnElement.classList.replace('btn-outline-secondary', 'btn-success');
+        setTimeout(function() {
+            btnElement.innerHTML = originalHTML;
+            btnElement.classList.replace('btn-success', 'btn-outline-secondary');
+        }, 2000);
+    } catch (err) {
+        console.error('Error al copiar: ', err);
+    }
+}
+
+async function inviteSpecificCaretaker(btnElement) {
+    var id = btnElement.dataset.id;
+    btnElement.innerHTML = 'Procesando...';
+    btnElement.disabled = true;
+    
+    try {
+        var response = await fetch('/admin/invitations/caretaker/' + id, { method: 'POST' });
+        var data = await response.json();
         
-        try {
-            var response = await fetch('/admin/invitations/researcher', { method: 'POST' });
-            var data = await response.json();
-            if (response.ok) {
-                container.classList.replace('alert-info', 'alert-success');
-                container.innerHTML = '<strong>Enlace investigador (hágasele llegar mediante WhatsApp, Email, etc.):</strong>' +
-                '<div class="input-group input-group-sm mt-1">' +
-                    '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
-                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
-                '</div>';
-            } else {
-                container.classList.replace('alert-info', 'alert-danger');
-                container.innerText = 'Fallo criptográfico.';
-            }
-        } catch (error) {
+        if (response.ok) {
+            btnElement.outerHTML = '<div class="input-group input-group-sm">' +
+                '<input type="text" class="form-control" value="' + data.url + '" readonly>' +
+                '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
+            '</div>';
+        } else {
+            btnElement.innerHTML = 'Fallo';
+            btnElement.classList.replace('btn-outline-success', 'btn-danger');
+        }
+    } catch (error) {
+        btnElement.innerHTML = 'Error Red';
+        btnElement.classList.replace('btn-outline-success', 'btn-danger');
+    }
+}
+
+async function resendInvitation(btnElement) {
+    const id = btnElement.dataset.id;
+    const container = btnElement.parentNode;
+    container.innerHTML = '<span class="text-muted small w-100 text-center">Regenerando token...</span>';
+    
+    try {
+        const response = await fetch('/admin/invitations/caretaker/' + id, { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.ok) {
+            container.outerHTML = '<div class="input-group input-group-sm">' +
+                '<input type="text" class="form-control border-info" value="' + data.url + '" readonly>' +
+                '<button class="btn btn-info text-white" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
+            '</div>';
+        } else {
+            container.innerHTML = '<span class="badge bg-danger w-100 py-2">FALLO CRIPTOGRÁFICO</span>';
+        }
+    } catch (error) {
+        container.innerHTML = '<span class="badge bg-danger w-100 py-2">ERROR DE RED</span>';
+    }
+}
+
+async function deleteCaretaker(event) {
+    event.preventDefault();
+    var extId = document.getElementById('deleteExternalId').value.trim();
+    var alertBox = document.getElementById('deleteAlert');
+    alertBox.innerHTML = '<span class="text-muted small">Procesando...</span>';
+    try {
+        var response = await fetch('/api/caretakers/' + extId, { method: 'DELETE' });
+        var data = await response.json();
+        if (response.ok) {
+            alertBox.innerHTML = '<span class="text-success small fw-bold">✓ ' + data.message + '</span>';
+            document.getElementById('deleteExternalId').value = '';
+        } else {
+            alertBox.innerHTML = '<span class="text-danger small">✗ ' + (data.message || data.error) + '</span>';
+        }
+    } catch (error) {
+        alertBox.innerHTML = '<span class="text-danger small">✗ Error de conexión.</span>';
+    }
+}
+
+async function openLogViewer(element) {
+const logName = element.dataset.log;
+if (!logName) {
+    console.error('Target log no definido en el nodo.');
+    return;
+}
+window.open('/admin/logs/' + logName, '_blank', 'noopener,noreferrer');
+}
+
+async function generateInvitationResearcher() {
+    var container = document.getElementById('inviteLinkResearcherContainer');
+    container.classList.remove('d-none', 'alert-success', 'alert-danger');
+    container.classList.add('alert-info');
+    container.innerText = 'Generando enlace cifrado...';
+    
+    try {
+        var response = await fetch('/admin/invitations/researcher', { method: 'POST' });
+        var data = await response.json();
+        if (response.ok) {
+            container.classList.replace('alert-info', 'alert-success');
+            container.innerHTML = '<strong>Enlace investigador (hágasele llegar mediante WhatsApp, Email, etc.):</strong>' +
+            '<div class="input-group input-group-sm mt-1">' +
+                '<input type="text" class="form-control bg-white" value="' + data.url + '" readonly>' +
+                '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
+            '</div>';
+        } else {
             container.classList.replace('alert-info', 'alert-danger');
-            container.innerText = 'Error de red.';
+            container.innerText = 'Fallo criptográfico.';
         }
+    } catch (error) {
+        container.classList.replace('alert-info', 'alert-danger');
+        container.innerText = 'Error de red.';
     }
-
-    async function handleGenerarAlta(node) {
-        const researcherId = node.dataset.researcher;
-        if (!researcherId) {
-            console.error('[SARA-Admin] Pérdida de contexto: No se localiza ID de investigador.');
-            return;
-        }
-
-        const originalText = node.innerHTML;
-        node.innerHTML = 'Procesando...';
-        node.disabled = true;
-
-        try {
-            const response = await fetch('/api/invitations/caretaker', { method: 'POST' });
-            const data = await response.json();
-            
-            if (response.ok) {
-                node.outerHTML = '<div class="input-group input-group-sm mt-2">' +
-                    '<input type="text" class="form-control" value="' + data.url + '" readonly>' +
-                    '<button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value, this)">📋</button>' +
-                '</div>';
-            } else {
-                node.innerHTML = 'Fallo';
-                node.classList.replace('btn-outline-success', 'btn-danger');
-            }
-        } catch (error) {
-            node.innerHTML = 'Error Red';
-            node.classList.replace('btn-outline-success', 'btn-danger');
-        }
-    }
-    </script>
+}
+</script>
 ` }) %>

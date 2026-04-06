@@ -1,5 +1,3 @@
-// src/routes/admin.js
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -8,7 +6,7 @@ const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
 const InvitationResearcherToken = require('../models/InvitationResearcherToken');
 const StudyRequest = require('../models/StudyRequest');
 const Researcher = require('../models/Researcher');
-const CaretakerIdentity = require('../models/CaretakerIdentity'); // Alineación con el Vault
+const CaretakerIdentity = require('../models/CaretakerIdentity');
 const requireAuth = require('../middlewares/requireAuth');
 const encryptionService = require('../services/encryptionService');
 
@@ -35,57 +33,40 @@ router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
             };
         }
 
-        let viewData = [];
+        let invitacionesData = [];
+        
+        // Cuidadores visibles para todos los roles
+        const identities = await CaretakerIdentity.find().sort({ createdAt: -1 });
+        const cuidadoresData = identities.map(c => ({
+            id: c.externalId,
+            date: c.createdAt,
+            name: safeDecrypt(c.name),
+            contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
+            desc: 'Alta Consolidada',
+            status: 'active'
+        }));
 
+        // Solicitudes orgánicas e invitaciones exclusivas para Admin
         if (req.user.role === 'admin') {
-            const [requests, identities] = await Promise.all([
-                StudyRequest.find().sort({ createdAt: -1 }),
-                CaretakerIdentity.find().sort({ createdAt: -1 })
-            ]);
-
-            const mappedRequests = requests.map(r => ({
+            const requests = await StudyRequest.find().sort({ createdAt: -1 });
+            invitacionesData = requests.map(r => ({
                 id: r._id,
-                type: 'request',
                 date: r.createdAt,
                 name: r.alias, 
                 contact: `${r.prefix} ${r.phone} ${r.email ? `<br><span class="text-muted" style="font-size:0.75rem">${r.email}</span>` : ''}`,
                 desc: r.descripcion || '—',
                 status: r.status
             }));
-
-            const mappedCaretakers = identities.map(c => ({
-                id: c.externalId,
-                type: 'caretaker',
-                date: c.createdAt,
-                name: safeDecrypt(c.name),
-                contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
-                desc: 'Alta Consolidada (Vault)',
-                status: 'active'
-            }));
-
-            viewData = [...mappedRequests, ...mappedCaretakers].sort((a, b) => b.date - a.date);
-
-        } else if (req.user.role === 'researcher') {
-            const identities = await CaretakerIdentity.find({ registeredTo: req.user.id }).sort({ createdAt: -1 });
-            
-            viewData = identities.map(c => ({
-                id: c.externalId,
-                type: 'caretaker',
-                date: c.createdAt,
-                name: safeDecrypt(c.name),
-                contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
-                desc: 'Alta Consolidada (Vault)',
-                status: 'active'
-            }));
         }
 
         res.render('pages/admin', { 
-            tableData: viewData,
+            cuidadores: cuidadoresData,
+            invitaciones: invitacionesData,
             user: fullUser 
         });
     } catch (error) {
         console.error('[SARA-Admin] Colapso en renderizado de panel:', error);
-        res.render('pages/admin', { tableData: [], user: req.user });
+        res.render('pages/admin', { cuidadores: [], invitaciones: [], user: req.user });
     }
 });
 
@@ -121,9 +102,9 @@ router.post('/invitations/caretaker/:id', requireAuth(['admin', 'researcher']), 
         request.status = 'sent';
         await request.save();
 
-        // Persistimos quién genera la invitación
         const newToken = await InvitationCaretakerToken.create({
-            createdBy: req.user.role === 'researcher' ? req.user.id : null
+            createdBy: req.user.role === 'researcher' ? req.user.id : null,
+            studyRequest: request._id
         });
         
         const url = `${req.protocol}://${req.get('host')}/register/${newToken.token}`;
@@ -137,9 +118,10 @@ router.post('/invitations/researcher', requireAuth(['admin']), async (req, res) 
     try {
         const newToken = await InvitationResearcherToken.create({ role: 'researcher' });
         const url = `${req.protocol}://${req.get('host')}/researcher/register/${newToken.token}`;
-        res.status(201).json({ url, token: newToken.token });
+        return res.status(201).json({ url, token: newToken.token });
     } catch (error) {
-        res.status(500).json({ error: 'Fallo al generar el enlace de invitación.' });
+        console.error('[SARA-Admin] Error creando token de investigador:', error.message);
+        return res.status(500).json({ error: 'Fallo al generar el enlace de invitación.' });
     }
 });
 

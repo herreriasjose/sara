@@ -37,13 +37,25 @@ router.get('/test-ema', (req, res) => {
     res.render('pages/ema', { title: 'SARA - Test de Evaluación' });
 });
 
+
 router.get('/register/:tokenId', async (req, res) => {
     try {
         const tokenRecord = await InvitationCaretakerToken.findOne({ token: req.params.tokenId });
         if (!tokenRecord) {
-            return res.status(403).send('El enlace de invitación ha expirado, no existe o ya ha sido utilizado.');
+            return res.status(403).send('El enlace de invitación ha expirado o ya ha sido utilizado.');
         }
-        res.render('pages/register-caretaker', { title: 'Alta de Cuidador', tokenId: tokenRecord.token });
+
+        const requestDoc = await StudyRequest.findById(tokenRecord.studyRequest);
+        if (!requestDoc) {
+            return res.status(404).send('Inconsistencia: Solicitud huérfana.');
+        }
+
+        res.render('pages/register-caretaker', { 
+            title: 'Alta de Cuidador', 
+            tokenId: tokenRecord.token,
+            phone: requestDoc.phone,
+            prefix: requestDoc.prefix
+        });
     } catch (error) {
         res.status(500).send('Error interno del servidor.');
     }

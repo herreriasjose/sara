@@ -92,7 +92,7 @@ document.getElementById('researcherForm').addEventListener('submit', async (e) =
     }
 
     btn.disabled = true;
-    btn.innerText = 'Cifrando e instanciando Bóveda...';
+    btn.innerText = 'Cifrando e instanciando BD...';
     status.style.display = 'none';
 
     const currentToken = document.getElementById('token').value;
@@ -116,7 +116,7 @@ document.getElementById('researcherForm').addEventListener('submit', async (e) =
 
         if (response.ok) {
             status.className = 'alert alert-success py-2 mb-3 text-center small fw-bold';
-            status.innerText = 'Bóveda configurada correctamente. Redirigiendo...';
+            status.innerText = 'Registro correcto. Redirigiendo...';
             status.style.display = 'block';
             setTimeout(() => window.location.href = '/admin', 2000);
         } else {

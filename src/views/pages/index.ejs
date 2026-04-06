@@ -1,5 +1,3 @@
-<!-- src\views\pages\index.ejs -->
-
 <%- include('../layouts/main', { 
     title: 'SARA | Inicio',
     body: `
@@ -20,6 +18,11 @@
                     <div class="alert alert-success mt-5 p-4 text-center shadow-sm border-0" role="alert">
                         <h4 class="alert-heading fw-bold mb-3">¡Solicitud Registrada!</h4>
                         <p class="mb-0">Tu petición de valoración se ha procesado correctamente. El equipo de investigación revisará tu caso y se pondrá en contacto contigo a través de los canales facilitados.</p>
+                    </div>
+                ` : status === 'registered' ? `
+                    <div class="alert alert-info mt-5 p-4 text-center shadow-sm border-0" role="alert">
+                        <h4 class="alert-heading fw-bold mb-3">¡Alta Completada!</h4>
+                        <p class="mb-0">Bienvenido al ecosistema SARA. Tu registro se ha procesado con éxito. El sistema comenzará a enviarte los enlaces de micro-evaluación a tu WhatsApp según el protocolo establecido. Ya puedes cerrar esta ventana.</p>
                     </div>
                 ` : `
                     <div class="card shadow-sm border-0 bg-light mt-5">
@@ -84,4 +87,3 @@
         </div>
     </div>
 ` }) %>
- 
