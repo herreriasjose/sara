@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
 const mongoose = require('mongoose');
 const app = require('../src/server');
+const CaretakerClinical = require('../src/models/CaretakerClinical'); // Inyección para inspección profunda
 
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;
@@ -53,7 +54,9 @@ describe('API Endpoints (Sincronización SARA)', () => {
                 caretakerDisabilityGrade: 69,
                 burdenType: 'mixed',
                 hasExternalSupport: true,
-                consentAccepted: true
+                consentAccepted: true,
+                morningAnchor: '07:15',         // Setup ERP t0
+                timezone: 'Atlantic/Canary'     // Sincronización
             }),
             redirect: 'manual' 
         });
@@ -64,6 +67,22 @@ describe('API Endpoints (Sincronización SARA)', () => {
         assert.ok(data.data.id, 'Debe devolver el id (externalId)');
         assert.match(data.data.id, /^SARA-[A-F0-9]{12}$/, 'Formato SARA-Hash opaco');
         generatedInternalId = data.data.id;
+    });
+
+    test('1.5 Validación de Bóveda Clínica -> Parámetros ERP y Bayes inicializados', async () => {
+        assert.ok(generatedInternalId, 'Dependencia de test anterior no satisfecha');
+        
+        const clinicalDoc = await CaretakerClinical.findOne({ externalId: generatedInternalId });
+        assert.ok(clinicalDoc, 'El documento clínico debe existir en BBDD');
+        
+        // Validación de Telemetría (Cronobiología)
+        assert.strictEqual(clinicalDoc.morningAnchor, '07:15', 'Fallo en persistencia del Ancla Matutina');
+        assert.strictEqual(clinicalDoc.timezone, 'Atlantic/Canary', 'Fallo en persistencia de Zona Horaria');
+        
+        // Validación de Inferencia Bayesiana (Distribución Beta Uniforme inicial)
+        assert.strictEqual(clinicalDoc.bayesianParams.alpha, 1, 'El Prior de Homeostasis (alpha) debe ser 1');
+        assert.strictEqual(clinicalDoc.bayesianParams.beta, 1, 'El Prior de Claudicación (beta) debe ser 1');
+        assert.strictEqual(clinicalDoc.bayesianParams.lastEnergyBaseline, null, 'El Baseline debe requerir calibración inicial (null)');
     });
 
     test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
