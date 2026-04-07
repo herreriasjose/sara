@@ -113,6 +113,28 @@
                 </div>
 
                 <div class="mb-4">
+                    <h6 class="fw-bold border-bottom pb-2 text-primary">4. Motor Predictivo ERP</h6>
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold" for="morningAnchorInput">Inicio de Guardia</label>
+                            <input type="time" name="morningAnchor" id="morningAnchorInput" class="form-control form-control-lg text-center fw-bold text-primary bg-light" value="08:30" required>
+                            <p class="text-muted mb-2" style="font-size: 0.75rem;">¿A qué hora sueles comenzar a atender al familiar?</p>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold" for="timezoneSelect">Zona Horaria (Sincronización)</label>
+                            <select name="timezone" id="timezoneSelect" class="form-select form-select-sm bg-light text-muted" required>
+                                <option value="Europe/Madrid">Europa / Madrid (Península)</option>
+                                <option value="Atlantic/Canary">Atlántico / Canarias</option>
+                                <option value="America/Argentina/Buenos_Aires">América / Buenos Aires</option>
+                                <option value="America/Bogota">América / Bogotá</option>
+                                <option value="America/Mexico_City">América / Ciudad de México</option>
+                            </select>
+                            <p class="text-muted mb-2" style="font-size: 0.75rem;"> </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
                     <div class="card border-warning bg-light">
                         <div class="card-body py-2">
                             <div class="form-check">
@@ -127,9 +149,9 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <input type="hidden" name="tokenId" value="${typeof tokenId !== 'undefined' ? tokenId : ''}">
-                
+
                 <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm fw-bold">
                     Comenzar Acompañamiento
                 </button>
@@ -141,4 +163,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            var detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var selectElement = document.getElementById('timezoneSelect');
+            
+            if (detectedTz && selectElement) {
+                var optionExists = Array.from(selectElement.options).some(opt => opt.value === detectedTz);
+                
+                if (!optionExists) {
+                    var newOption = new Option(detectedTz + " (Detectada)", detectedTz, true, true);
+                    selectElement.add(newOption);
+                } else {
+                    selectElement.value = detectedTz;
+                }
+            }
+        } catch(e) {
+            console.warn('SARA [Sys]: Fallo en autodescubrimiento TZ. Fallback a Europe/Madrid aplicado.');
+        }
+    });
+</script>
 ` }) %>

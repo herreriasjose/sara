@@ -2,22 +2,60 @@
 
 const mongoose = require('mongoose');
 
-const CaretakerClinicalSchema = new mongoose.Schema({
-    externalId: { type: String, required: true, unique: true },
-    age: { type: Number, required: true },
-    gender: { type: String, enum: ['female', 'male', 'other'], required: true },
-    relationship: { type: String, required: true },
-    isProfessional: { type: Boolean, default: false },
-    yearsCaregiving: { type: Number, required: true },
-    patientAge: { type: Number, required: true },
-    patientGender: { type: String, enum: ['female', 'male', 'other'], required: true },
-    patientDisabilityGrade: { type: String, required: true }, 
-    burdenType: { type: String, enum: ['physical', 'cognitive', 'mixed'], required: true },
-    hasExternalSupport: { type: Boolean, required: true },
-    caretakerDisabilityGrade: { type: String, required: true },
-    lastBurnoutProbability: { type: String, required: true }, 
-    lastInteractionAt: { type: Date },
-    streakCount: { type: Number, default: 0 }
+const caretakerClinicalSchema = new mongoose.Schema({
+    externalId: {
+        type: String,
+        required: true,
+        unique: true,
+        index: true
+    },
+    age: Number,
+    gender: String,
+    relationship: String,
+    isProfessional: {
+        type: Boolean,
+        default: false
+    },
+    yearsCaregiving: Number,
+    patientAge: Number,
+    patientGender: String,
+    burdenType: String,
+    hasExternalSupport: {
+        type: Boolean,
+        default: false
+    },
+    patientDisabilityGrade: {
+        type: String, // Cifrado AES-256
+        required: true
+    },
+    caretakerDisabilityGrade: {
+        type: String, // Cifrado AES-256
+        required: true
+    },
+    lastBurnoutProbability: {
+        type: String, // Cifrado AES-256
+        required: true
+    },
+    streakCount: {
+        type: Number,
+        default: 0
+    },
+    morningAnchor: { 
+        type: String, 
+        required: true, 
+        default: '08:30',
+        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+    },
+    timezone: { 
+        type: String, 
+        default: 'Europe/Madrid' 
+    },
+    bayesianParams: {
+        alpha: { type: Number, default: 1 }, 
+        beta: { type: Number, default: 1 },  
+        lastEnergyBaseline: { type: Number, default: null },
+        alostaticSlope: { type: Number, default: 0 }
+    }
 }, { timestamps: true });
 
-module.exports = mongoose.model('CaretakerClinical', CaretakerClinicalSchema);
+module.exports = mongoose.model('CaretakerClinical', caretakerClinicalSchema);

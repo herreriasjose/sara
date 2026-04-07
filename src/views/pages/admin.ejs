@@ -9,8 +9,8 @@ Administración
             <h4 class="mb-0 text-primary fw-bold">${locals.user ? locals.user.firstName + ' ' + locals.user.lastName : 'Not found'}</h4>
             <span class="badge bg-secondary mt-1">${locals.user ? locals.user.role : 'Not found'}</span>
         </div>
-        <button class="btn btn-outline-dark btn-sm shadow-sm" data-id="${locals.user ? locals.user._id : ''}" onclick="openResearcherSettings(this)" title="Ajustes de Perfil">
-            ⚙️ Configuración
+        <button class="btn btn-outline-dark btn-sm shadow-sm" data-id="${locals.user ? locals.user._id : ''}" onclick="openResearcherSettings(this)" title="Ajustes de Perfil" disabled>
+    ⚙️ Configuración
         </button>
     </div>
 

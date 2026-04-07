@@ -71,7 +71,7 @@
                     <div class="col-md-6">
                         <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">2. Perfil del Cuidado</h6>
                         
-                            <div class="mb-3">
+                        <div class="mb-3">
                             <label class="form-label small fw-bold">Vínculo</label>
                             <select name="relationship" class="form-select form-select-sm" required>
                                 <option value="" selected disabled>Selecciona...</option>
@@ -88,14 +88,13 @@
                             <input type="number" name="patientDisabilityGrade" class="form-control form-control-sm" min="0" max="100" required>
                         </div>
 
-                        
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Años en el rol de cuidado</label>
                             <input type="number" name="yearsCaregiving" class="form-control form-control-sm" min="0" max="100" required>
                         </div>
 
                         <div class="row">
-                        <div class="col-6 mb-3">
+                            <div class="col-6 mb-3">
                                 <label class="form-label small fw-bold">Edad</label>
                                 <input type="number" name="patientAge" class="form-control form-control-sm" min="10" max="110" required>
                             </div>
@@ -108,8 +107,7 @@
                                     <option value="other">Otro</option>
                                 </select>
                             </div>
-                            </div>
-
+                        </div>
 
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Tipo de Carga Principal</label>
@@ -132,6 +130,28 @@
                     </div>
                 </div>
 
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">3. Motor Predictivo ERP</h6>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-bold" for="morningAnchorInput">Inicio de Guardia (Ancla Matutina)</label>
+                        <input type="time" name="morningAnchor" id="morningAnchorInput" class="form-control form-control-sm text-center fw-bold bg-light" value="08:30" required>
+                        <div class="form-text" style="font-size: 0.7rem;">¿A qué hora suele comenzar a atender al familiar? (Establece el t0 diario)</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-bold" for="timezoneSelect">Zona Horaria (Sincronización)</label>
+                        <select name="timezone" id="timezoneSelect" class="form-select form-select-sm bg-light text-muted" required>
+                            <option value="Europe/Madrid">Europa / Madrid (Península)</option>
+                            <option value="Atlantic/Canary">Atlántico / Canarias</option>
+                            <option value="America/Argentina/Buenos_Aires">América / Buenos Aires</option>
+                            <option value="America/Bogota">América / Bogotá</option>
+                            <option value="America/Mexico_City">América / Ciudad de México</option>
+                        </select>
+                        <div class="form-text" style="font-size: 0.7rem;">Detectada automáticamente. Modificar solo si es errónea.</div>
+                    </div>
+                </div>
+
                 <div class="alert alert-warning mt-3 border-0 py-2 small d-flex align-items-center">
                     <i class="bi bi-shield-check-fill fs-4 me-3"></i>
                     <div>
@@ -149,4 +169,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            var detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var selectElement = document.getElementById('timezoneSelect');
+            
+            if (detectedTz && selectElement) {
+                var optionExists = Array.from(selectElement.options).some(opt => opt.value === detectedTz);
+                
+                if (!optionExists) {
+                    var newOption = new Option(detectedTz + " (Detectada)", detectedTz, true, true);
+                    selectElement.add(newOption);
+                } else {
+                    selectElement.value = detectedTz;
+                }
+            }
+        } catch(e) {
+            console.warn('SARA [Sys]: Fallo en autodescubrimiento TZ. Fallback a Europe/Madrid aplicado.');
+        }
+    });
+</script>
 ` }) %>

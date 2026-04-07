@@ -53,7 +53,9 @@ exports.registerCaretaker = async (req, res) => {
             patientDisabilityGrade, caretakerDisabilityGrade, 
             relationship, hasExternalSupport, age, gender, 
             yearsCaregiving, patientAge, patientGender, 
-            burdenType, consentAccepted, tokenId 
+            burdenType, consentAccepted, tokenId,
+            morningAnchor, 
+            timezone
         } = req.body;
 
         const e164Phone = formatE164(prefix || '+34', phoneNumber);
@@ -61,16 +63,14 @@ exports.registerCaretaker = async (req, res) => {
         
         let assignedResearcher = null;
 
-        // Lógica de Trazabilidad: Recuperar origen de la invitación
         if (tokenId) {
             const tokenDoc = await InvitationCaretakerToken.findOne({ token: tokenId });
             if (tokenDoc) {
-                assignedResearcher = tokenDoc.createdBy; // Puede ser el ID de un Researcher o null (Admin)
+                assignedResearcher = tokenDoc.createdBy; 
                 await InvitationCaretakerToken.deleteOne({ token: tokenId });
                 auditLogger.logAccess('TOKEN_CONSUMED', externalId, 'User_Registration');
             }
         } 
-        // Si es alta manual (el investigador está logado realizando la acción)
         else if (req.user && req.user.role === 'researcher') {
             assignedResearcher = req.user.id;
         }
@@ -82,7 +82,7 @@ exports.registerCaretaker = async (req, res) => {
             email: email ? encrypt(email) : undefined,
             postalCode: encrypt(postalCode),
             consentAccepted: consentAccepted === 'true' || consentAccepted === true,
-            registeredTo: assignedResearcher // Vínculo de cohorte
+            registeredTo: assignedResearcher 
         };
 
         const clinicalData = {
@@ -98,7 +98,14 @@ exports.registerCaretaker = async (req, res) => {
             hasExternalSupport: hasExternalSupport === 'true' || hasExternalSupport === true,
             patientDisabilityGrade: encrypt(Number(patientDisabilityGrade || 0)),
             caretakerDisabilityGrade: encrypt(Number(caretakerDisabilityGrade || 0)),
-            lastBurnoutProbability: encrypt(0.1)
+            lastBurnoutProbability: encrypt(0.1), 
+            morningAnchor: morningAnchor || "08:30",
+            timezone: timezone || "Europe/Madrid",
+            bayesianParams: {
+                alpha: 1, 
+                beta: 1,  
+                lastEnergyBaseline: null
+            }
         };
 
         await CaretakerIdentity.create(identityData);
