@@ -9,6 +9,7 @@ const Researcher = require('../models/Researcher');
 const CaretakerIdentity = require('../models/CaretakerIdentity');
 const requireAuth = require('../middlewares/requireAuth');
 const encryptionService = require('../services/encryptionService');
+const jwt = require('jsonwebtoken');
 
 const safeDecrypt = (val) => {
     if (!val) return '';
@@ -67,6 +68,28 @@ router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
     } catch (error) {
         console.error('[SARA-Admin] Colapso en renderizado de panel:', error);
         res.render('pages/admin', { cuidadores: [], invitaciones: [], user: req.user });
+    }
+});
+
+router.post('/ema/generate-token/:externalId', requireAuth(['admin']), async (req, res) => {
+    try {
+        const { externalId } = req.params;
+        
+        // Bloqueo de seguridad si el front filtra cadenas inválidas
+        if (!externalId || externalId === 'undefined') {
+            return res.status(400).json({ error: 'Identidad clínica no válida.' });
+        }
+
+        const token = jwt.sign(
+            { externalId, role: 'caretaker', isSimulated: true },
+            process.env.JWT_SECRET || 'fallback_secret_development',
+            { expiresIn: '45m' }
+        );
+        
+        // Alineación estricta con el montaje app.use('/ema', emaRoutes) de server.js
+        res.status(200).json({ url: '/ema/r/' + token });
+    } catch (error) {
+        res.status(500).json({ error: 'Fallo criptográfico en generación de enlace.' });
     }
 });
 

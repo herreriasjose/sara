@@ -1,5 +1,3 @@
-// src/server.js
-
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -42,9 +40,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 const adminRoutes = require('./routes/admin');
 const apiRoutes = require('./routes/api');
 const webRoutes = require('./routes/web');
+const emaRoutes = require('./routes/ema');
 
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
+app.use('/ema', emaRoutes);
 app.use('/', webRoutes);
 
 if (require.main === module) {

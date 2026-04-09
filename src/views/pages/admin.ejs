@@ -2,8 +2,7 @@
 title: 'SARA | Panel Investigador',
 body: `
 
-Administración
-
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded border shadow-sm text-start">
         <div>
             <h4 class="mb-0 text-primary fw-bold">${locals.user ? locals.user.firstName + ' ' + locals.user.lastName : 'Not found'}</h4>
@@ -40,6 +39,7 @@ Administración
                         <th>Nombre/Alias</th>
                         <th>Contacto</th>
                         <th>Estatus Clínico</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,9 +51,12 @@ Administración
                                 '<td class="fw-bold text-dark">' + c.name + '</td>' +
                                 '<td>' + c.contact + '</td>' +
                                 '<td style="min-width: 140px;"><span class="badge bg-primary w-100 py-2 shadow-sm">MONITORIZACIÓN ACTIVA</span></td>' +
+                                '<td style="min-width: 160px;">' +
+                                    '<button type="button" class="btn btn-sm btn-outline-primary w-100 shadow-sm" data-id="' + (c.externalId || c.id || c._id) + '" onclick="simulateSpecificEma(this)">Simular Formulario EMA</button>' +
+                                '</td>' +
                             '</tr>';
                         }).join('') 
-                    : '<tr><td colspan="4" class="text-center text-muted py-4">No hay cuidadores consolidados en la cohorte.</td></tr>'}
+                    : '<tr><td colspan="5" class="text-center text-muted py-4">No hay cuidadores consolidados en la cohorte.</td></tr>'}
                 </tbody>
             </table>
         </div>
@@ -83,7 +86,7 @@ Administración
                             } else if (r.status === 'sent') {
                                 btnUI = '<div class="d-flex gap-1 align-items-center w-100">' +
                                         '<span class="badge bg-info w-100 py-2">ESTADO: ENVIADO</span>' +
-                                        '<button onclick="resendInvitation(this)" data-id="' + r.id + '" class="btn btn-sm btn-outline-dark" title="Generar nuevo enlace">↻ RESEND</button>' +
+                                        '<button onclick="resendInvitation(this)" data-id="' + r.id + '" class="btn btn-outline-dark" title="Generar nuevo enlace">Reenviar</button>' +
                                         '</div>';
                             } else {
                                 btnUI = '<span class="badge bg-secondary w-100 py-2">ESTADO: ' + (r.status || '').toUpperCase() + '</span>';
@@ -117,7 +120,6 @@ Administración
                     <h5 class="card-title text-primary">Gestión Cuidadores</h5>
                     <div class="d-grid gap-2 mt-3">
                         <a href="/admin/register" class="btn btn-outline-dark btn-sm">Alta Manual de un Cuidador</a>
-                        <a href="/test-ema" class="btn btn-primary btn-sm mt-2">Simular Formulario EMA (20s)</a>
                     </div>
                 </div>
             </div>
@@ -128,7 +130,7 @@ Administración
             <div class="card-body">
                 <h5 class="card-title text-primary">Gestión Investigadores</h5>
                 <div class="d-grid gap-2 mt-3">
-                    <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador (1 Día)</button>
+                    <button onclick="generateInvitationResearcher()" class="btn btn-outline-primary btn-sm">Generar Enlace Alta de Investigador</button>
                     <div id="inviteLinkResearcherContainer" class="alert alert-success d-none small p-2 mt-1 mb-1"></div>
                 </div>
             </div>
@@ -290,12 +292,12 @@ async function deleteCaretaker(event) {
 }
 
 async function openLogViewer(element) {
-const logName = element.dataset.log;
-if (!logName) {
-    console.error('Target log no definido en el nodo.');
-    return;
-}
-window.open('/admin/logs/' + logName, '_blank', 'noopener,noreferrer');
+    const logName = element.dataset.log;
+    if (!logName) {
+        console.error('Target log no definido en el nodo.');
+        return;
+    }
+    window.open('/admin/logs/' + logName, '_blank', 'noopener,noreferrer');
 }
 
 async function generateInvitationResearcher() {
@@ -321,6 +323,31 @@ async function generateInvitationResearcher() {
     } catch (error) {
         container.classList.replace('alert-info', 'alert-danger');
         container.innerText = 'Error de red.';
+    }
+}
+
+async function simulateSpecificEma(element) {
+    const id = element.dataset.id;
+    if (!id) return console.error('Identificador de cuidador ausente.');
+    
+    const originalText = element.innerText;
+    element.disabled = true;
+    element.innerText = 'Cifrando...';
+    
+    try {
+        const response = await fetch('/admin/ema/generate-token/' + id, { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.ok && data.url) {
+            window.open(data.url, '_blank', 'noopener,noreferrer');
+        } else {
+            console.error('Rechazo del Gateway:', data.error);
+        }
+    } catch (error) {
+        console.error('Fallo de red:', error);
+    } finally {
+        element.disabled = false;
+        element.innerText = originalText;
     }
 }
 </script>

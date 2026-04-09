@@ -1,13 +1,12 @@
-<%- include('../layouts/main', { body: `
+<%- include('../layouts/main', { 
+    title: 'SARA | Formulario de Monitorización (EMA)', 
+    body: `
     <div class="container mt-4" style="max-width: 500px;">
         <div class="card shadow-sm border-0">
             <div class="card-body p-4">
                 <h2 class="h4 mb-4 text-center">Formulario EMA</h2>
                 
-                <form id="emaForm" action="/api/ema" method="POST">
-                    <input type="hidden" name="externalId" value="WA-TEST-01">
-                    <input type="hidden" name="responseTimeMs" id="responseTimeMs">
-
+                <form id="emaForm" data-token="${locals.token}">
                     <div class="mb-4">
                         <label class="form-label fw-bold">1. ¿Cuánta energía tienes ahora?</label>
                         <div class="d-flex justify-content-between">
@@ -46,29 +45,65 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm mt-3">
+                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 shadow-sm mt-3">
                         Enviar Registro
                     </button>
+                    
+                    <div id="statusAlert" class="mt-3 text-center small fw-bold d-none"></div>
                 </form>
             </div>
         </div>
     </div>
 
-    <script>
-        // Lógica de cronometría para el TFM (responseTimeMs)
-        const startTime = Date.now();
-        const energySlider = document.getElementById('energyRange');
-        const energyDisp = document.getElementById('energyVal');
-
-        energySlider.oninput = function() { energyDisp.innerHTML = this.value; }
-
-        document.getElementById('emaForm').onsubmit = function() {
-            document.getElementById('responseTimeMs').value = Date.now() - startTime;
-        };
-    </script>
-
     <style>
         .custom-slider { height: 2.5rem; }
         .btn-group .btn { padding: 1rem 0.5rem; font-weight: bold; }
     </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startTime = Date.now();
+            const form = document.getElementById('emaForm');
+            const energyRange = document.getElementById('energyRange');
+            const energyVal = document.getElementById('energyVal');
+            const statusAlert = document.getElementById('statusAlert');
+            const submitBtn = document.getElementById('submitBtn');
+
+            energyRange.addEventListener('input', function() {
+                energyVal.innerText = this.value;
+            });
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                
+                const payload = {
+                    energy: form.energy.value,
+                    tension: form.querySelector('input[name="tension"]:checked').value,
+                    clarity: form.querySelector('input[name="clarity"]:checked').value,
+                    responseTimeMs: Date.now() - startTime
+                };
+
+                try {
+                    const response = await fetch('', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        form.style.display = 'none';
+                        statusAlert.innerText = 'Registro procesado. Ventana cerrada.';
+                        statusAlert.className = 'mt-3 text-center small fw-bold text-success';
+                    } else {
+                        throw new Error('Validación rechazada');
+                    }
+                } catch (error) {
+                    submitBtn.disabled = false;
+                    statusAlert.innerText = 'Enlace caducado o error de red.';
+                    statusAlert.className = 'mt-3 text-center small fw-bold text-danger';
+                }
+            });
+        });
+    </script>
 ` }) %>
