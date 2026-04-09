@@ -9,10 +9,11 @@ const CaretakerIdentitySchema = new mongoose.Schema({
     email: { type: String, sparse: true },
     postalCode: { type: String, required: true },
     consentAccepted: { type: Boolean, required: true, default: false },
+    isSubjectOfTest: { type: Boolean, default: false }, 
     registeredTo: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Researcher',
-        index: true // Óptimo para acelerar las queries de filtrado de la cohorte
+        index: true
     }
 }, { 
     timestamps: true 

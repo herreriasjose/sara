@@ -40,11 +40,13 @@ router.get('/', requireAuth(['admin', 'researcher']), async (req, res) => {
         const identities = await CaretakerIdentity.find().sort({ createdAt: -1 });
         const cuidadoresData = identities.map(c => ({
             id: c.externalId,
+            externalId: c.externalId,
             date: c.createdAt,
             name: safeDecrypt(c.name),
             contact: safeDecrypt(c.phoneReal) + (c.email ? `<br><span class="text-muted" style="font-size:0.75rem">${safeDecrypt(c.email)}</span>` : ''),
             desc: 'Alta Consolidada',
-            status: 'active'
+            status: 'active',
+            isSubjectOfTest: c.isSubjectOfTest || false 
         }));
 
         // Solicitudes orgánicas e invitaciones exclusivas para Admin

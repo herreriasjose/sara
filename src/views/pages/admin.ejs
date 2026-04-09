@@ -51,8 +51,11 @@ body: `
                                 '<td class="fw-bold text-dark">' + c.name + '</td>' +
                                 '<td>' + c.contact + '</td>' +
                                 '<td style="min-width: 140px;"><span class="badge bg-primary w-100 py-2 shadow-sm">MONITORIZACIÓN ACTIVA</span></td>' +
-                                '<td style="min-width: 160px;">' +
-                                    '<button type="button" class="btn btn-sm btn-outline-primary w-100 shadow-sm" data-id="' + (c.externalId || c.id || c._id) + '" onclick="simulateSpecificEma(this)">Simular Formulario EMA</button>' +
+                                '<td style="min-width: 180px;">' +
+                                    '<div class="d-grid gap-2">' +
+                                        '<button type="button" class="btn btn-sm btn-outline-info shadow-sm" data-id="' + (c.externalId || c.id || c._id) + '" onclick="viewCaretakerStatus(this)">Estado del Cuidador</button>' +
+                                        (c.isSubjectOfTest ? '<button type="button" class="btn btn-sm btn-outline-primary shadow-sm" data-id="' + (c.externalId || c.id || c._id) + '" onclick="simulateSpecificEma(this)">Simular Formulario EMA</button>' : '') +
+                                    '</div>' +
                                 '</td>' +
                             '</tr>';
                         }).join('') 
@@ -209,6 +212,12 @@ function openResearcherSettings(element) {
         return;
     }
     window.location.href = '/admin/researcher/' + researcherId + '/settings';
+}
+
+function viewCaretakerStatus(element) {
+    const id = element.dataset.id;
+    if (!id) return console.error('Identificador de cuidador ausente.');
+    window.location.href = '/ema/status/' + id;
 }
 
 async function copyToClipboard(text, btnElement) {

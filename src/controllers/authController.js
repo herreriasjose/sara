@@ -55,7 +55,8 @@ exports.registerCaretaker = async (req, res) => {
             yearsCaregiving, patientAge, patientGender, 
             burdenType, consentAccepted, tokenId,
             morningAnchor, 
-            timezone
+            timezone,
+            isSubjectOfTest
         } = req.body;
 
         const e164Phone = formatE164(prefix || '+34', phoneNumber);
@@ -82,6 +83,7 @@ exports.registerCaretaker = async (req, res) => {
             email: email ? encrypt(email) : undefined,
             postalCode: encrypt(postalCode),
             consentAccepted: consentAccepted === 'true' || consentAccepted === true,
+            isSubjectOfTest: isSubjectOfTest === 'true' || isSubjectOfTest === true,
             registeredTo: assignedResearcher 
         };
 
@@ -105,7 +107,8 @@ exports.registerCaretaker = async (req, res) => {
                 alpha: 1, 
                 beta: 1,  
                 lastEnergyBaseline: null
-            }
+            },
+            isSubjectOfTest: false
         };
 
         await CaretakerIdentity.create(identityData);

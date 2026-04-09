@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose'); // Requerido para validar ObjectId
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const EmaEntry = require('../models/EmaEntry');
 const CaretakerClinical = require('../models/CaretakerClinical');
 const brainClient = require('../services/brainClient');
+const requireAuth = require('../middlewares/requireAuth');
 
 const verifyEmaToken = (req, res, next) => {
     const { token } = req.params;
@@ -27,7 +28,6 @@ router.post('/r/:token', verifyEmaToken, async (req, res) => {
     const { energy, tension, clarity, responseTimeMs } = req.body;
 
     try {
-        // Blindaje contra CastError: Solo usamos $or si el ID tiene formato válido de MongoDB
         let query = { externalId: externalId };
         if (mongoose.Types.ObjectId.isValid(externalId)) {
             query = { $or: [{ externalId: externalId }, { _id: externalId }] };
@@ -40,7 +40,6 @@ router.post('/r/:token', verifyEmaToken, async (req, res) => {
             return res.status(404).json({ error: 'Identidad clínica no hallada en persistencia.' });
         }
 
-        // Parseo explícito de métricas para evitar fallos de esquema por Strings inyectados
         await EmaEntry.create({
             patientId: clinicalRecord._id,
             metrics: { 
@@ -52,7 +51,6 @@ router.post('/r/:token', verifyEmaToken, async (req, res) => {
             isSimulated: isSimulated || false
         });
 
-        // Cortafuegos JITAI: Los simulacros no contaminan el motor Bayesiano
         if (isSimulated) {
             return res.status(200).json({ status: 'success', blindAck: true, simulated: true });
         }
@@ -67,9 +65,29 @@ router.post('/r/:token', verifyEmaToken, async (req, res) => {
 
         res.status(200).json({ status: 'success', blindAck: true });
     } catch (error) {
-        // Registro nativo del core del error para auditoría en gateway.log
         console.error('[SARA-EMA] Colapso de persistencia:', error); 
         res.status(500).json({ error: 'Fallo de integridad en persistencia EMA.' });
+    }
+});
+
+// GET: Estado y auditoría de registros EMA del cuidador
+router.get('/status/:id', requireAuth(['admin', 'researcher']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        let query = { externalId: id };
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            query = { $or: [{ externalId: id }, { _id: id }] };
+        }
+        
+        const clinical = await CaretakerClinical.findOne(query).lean();
+        if (!clinical) return res.status(404).send('Identidad clínica no hallada.');
+
+        const entries = await EmaEntry.find({ patientId: clinical._id }).sort({ createdAt: -1 }).lean();
+        
+        res.render('pages/caretaker-status', { clinical, entries });
+    } catch (error) {
+        console.error('[SARA-EMA] Fallo al recuperar estado clínico:', error);
+        res.status(500).send('Fallo de integridad al recuperar datos.');
     }
 });
 

@@ -1,3 +1,5 @@
+// src/models/Caretaker.js
+
 const mongoose = require('mongoose');
 
 const CaretakerSchema = new mongoose.Schema({
@@ -30,8 +32,8 @@ const CaretakerSchema = new mongoose.Schema({
     lastBurnoutProbability: { type: String, required: true }, 
     lastInteractionAt: { type: Date },
     streakCount: { type: Number, default: 0 },
-    registeredTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Researcher' }
-}, {
+    registeredTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Researcher' },
+    isSubjectOfTest: { type: Boolean, required: true, default: false }
 }, { 
     timestamps: true 
 });
