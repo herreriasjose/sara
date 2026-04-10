@@ -1,4 +1,4 @@
-// tests\authService.test.js
+// tests/authService.test.js
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
@@ -7,19 +7,22 @@ const authService = require('../src/services/authService');
 describe('Servicio de Autenticación (Tokens Efímeros)', () => {
   const mockCaretakerId = '65f1a2b3c4d5e6f7a8b9c0d1';
 
-  it('Debe generar un token en formato base64url', () => {
+  it('Debe generar un token en formato JWT (tres segmentos)', () => {
     const token = authService.generateEmaToken(mockCaretakerId);
     assert.ok(token);
     assert.strictEqual(typeof token, 'string');
     
-    // Corregido: [a-zA-Z0-9_-] para permitir todos los números
-    assert.match(token, /^[a-zA-Z0-9_-]+$/, 'El token debe ser URL-safe');
+    // Validación de estructura JWT estándar (Header.Payload.Signature) URL-Safe
+    assert.match(token, /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/, 'El token debe tener formato JWT');
   });
 
-  it('Debe verificar un token válido y recuperar el patientId original', () => {
+  it('Debe verificar un token válido y recuperar el clinicalId original', () => {
     const token = authService.generateEmaToken(mockCaretakerId);
-    const recoveredId = authService.verifyEmaToken(token);
-    assert.strictEqual(recoveredId, mockCaretakerId);
+    const payload = authService.verifyEmaToken(token);
+    
+    assert.ok(payload);
+    assert.strictEqual(payload.clinicalId, mockCaretakerId);
+    assert.strictEqual(payload.isSimulated, false); // Valor por defecto instanciado en el generador
   });
 
   it('Debe retornar null si el token ha sido manipulado', () => {
@@ -30,7 +33,7 @@ describe('Servicio de Autenticación (Tokens Efímeros)', () => {
   });
 
   it('Debe fallar ante un token con formato inválido', () => {
-    const result = authService.verifyEmaToken('token-completamente-falso');
+    const result = authService.verifyEmaToken('token.completamente.falso');
     assert.strictEqual(result, null);
   });
 });

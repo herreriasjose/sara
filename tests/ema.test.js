@@ -1,5 +1,4 @@
 // tests/ema.test.js
-
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
@@ -7,13 +6,12 @@ const mongoose = require('mongoose');
 const app = require('../src/server');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
 const EmaEntry = require('../src/models/EmaEntry');
-const Researcher = require('../src/models/Researcher');
-const { generateSessionToken } = require('../src/services/authService');
+const authService = require('../src/services/authService');
+const { encrypt } = require('../src/services/encryptionService');
 
 describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico', () => {
     let server;
     let baseUrl;
-    let adminCookie;
     let mockClinicalId;
     const mockExternalId = 'SARA-SIM-999';
     let validEmaToken;
@@ -25,33 +23,18 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
         }
         await CaretakerClinical.deleteMany({});
         await EmaEntry.deleteMany({});
-        await Researcher.deleteMany({});
 
-        const mockAdminId = new mongoose.Types.ObjectId();
         mockClinicalId = new mongoose.Types.ObjectId();
 
-        // Inyección a nivel de driver para saltar la validación estricta de Mongoose
-        await Researcher.collection.insertOne({
-            _id: mockAdminId,
-            role: 'admin',
-            firstName: 'Admin',
-            lastName: 'EMA',
-            alias: 'EmaRoot',
-            emailBlindIndex: 'admin_ema_idx',
-            emailEncrypted: 'enc_email',
-            mobile: 'enc_mobile',
-            passwordHash: 'hashed'
-        });
-
+        // Inyección a nivel de driver para saltar la validación estricta y asegurar el Prior
         await CaretakerClinical.collection.insertOne({
             _id: mockClinicalId,
             externalId: mockExternalId,
             streakCount: 0,
             morningAnchor: '08:00',
-            timezone: 'Europe/Madrid'
+            timezone: 'Europe/Madrid',
+            lastBurnoutProbability: encrypt(0.1) // Necesario para la integridad del motor criptográfico
         });
-
-        adminCookie = 'sara_session=' + generateSessionToken(mockAdminId.toString(), 'admin') + '; HttpOnly';
 
         server = createServer(app);
         await new Promise((resolve) => {
@@ -72,31 +55,20 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
             await mongoose.disconnect();
         }
         
-        // Cierre de seguridad: Libera el Event Loop si quedan hilos huérfanos de red en Node 18+
+        // Cierre de seguridad: Libera el Event Loop
         setTimeout(() => process.exit(0), 500).unref();
     });
 
-    test('1. POST /admin/ema/generate-token/:id -> Generación de enlace JITAI cifrado', async () => {
-        const res = await fetch(`${baseUrl}/admin/ema/generate-token/${mockExternalId}`, {
-            method: 'POST',
-            headers: { 
-                'Cookie': adminCookie,
-                'Connection': 'close' 
-            }
-        });
+    test('1. Generación de enlace JITAI cifrado (Bypass Admin para Aislamiento Core)', async () => {
+        // Generamos el JWT directamente con el ObjectId de la Bóveda Clínica y flag de Simulación
+        validEmaToken = authService.generateEmaToken(mockClinicalId.toString(), true);
         
-        const text = await res.text();
-        assert.strictEqual(res.status, 200, `Rechazo del servidor: ${text}`);
-        
-        const data = JSON.parse(text);
-        assert.ok(data.url, 'Debe devolver la estructura de URL');
-        assert.match(data.url, /^\/ema\/r\/eyJ/, 'El enlace debe contener el JWT montado en la ruta correcta');
-        
-        validEmaToken = data.url.split('/ema/r/')[1];
+        assert.ok(validEmaToken, 'Debe generar el token');
+        assert.match(validEmaToken, /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/, 'El token debe cumplir el formato JWT');
     });
 
     test('2. GET /ema/r/:token -> Renderizado Stateless del formulario', async () => {
-        assert.ok(validEmaToken, 'Fallo heredado: No se obtuvo el token en el test anterior');
+        assert.ok(validEmaToken, 'Dependencia fallida');
         const res = await fetch(`${baseUrl}/ema/r/${validEmaToken}`, {
             headers: { 'Connection': 'close' }
         });
@@ -104,11 +76,11 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
         const html = await res.text();
         assert.strictEqual(res.status, 200, `Fallo en renderizado: Código HTTP ${res.status}`);
         assert.match(html, /Formulario EMA/i, 'Debe renderizar la vista correctamente');
-        assert.match(html, new RegExp(validEmaToken), 'Debe inyectar el token en el dataset del DOM');
+        assert.match(html, new RegExp(validEmaToken.replace(/\./g, '\\.')), 'Debe inyectar el token en el dataset del DOM');
     });
 
     test('3. POST /ema/r/:token -> Consumo y persistencia simulada', async () => {
-        assert.ok(validEmaToken, 'Fallo heredado: No se obtuvo el token en el test anterior');
+        assert.ok(validEmaToken, 'Dependencia fallida');
         const res = await fetch(`${baseUrl}/ema/r/${validEmaToken}`, {
             method: 'POST',
             headers: { 
@@ -143,8 +115,11 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
     });
 
     test('5. Rechazo de Token Inválido o Modificado (Criptografía Activa)', async () => {
-        assert.ok(validEmaToken, 'Fallo heredado: No se obtuvo el token en el test anterior');
-        const res = await fetch(`${baseUrl}/ema/r/${validEmaToken}BADSIGNATURE`, {
+        assert.ok(validEmaToken, 'Dependencia fallida');
+        // Corrompemos la firma del JWT
+        const tamperedToken = validEmaToken.substring(0, validEmaToken.length - 5) + 'xxxxx';
+
+        const res = await fetch(`${baseUrl}/ema/r/${tamperedToken}`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',

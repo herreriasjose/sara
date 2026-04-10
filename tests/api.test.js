@@ -4,15 +4,16 @@ const assert = require('node:assert/strict');
 const { createServer } = require('node:http');
 const mongoose = require('mongoose');
 const app = require('../src/server');
-const CaretakerClinical = require('../src/models/CaretakerClinical'); // Inyección para inspección profunda
+const CaretakerClinical = require('../src/models/CaretakerClinical');
+const authService = require('../src/services/authService'); // Inyectamos generador de tokens
 
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;
     let baseUrl;
     let generatedInternalId;
+    let generatedClinicalObjectId; // Necesario para el JWT
     const testPhoneNumber = '+34699999999';
     
-    // Auth Token para endpoints protegidos (si el middleware lo requiere)
     const API_KEY = process.env.SARA_API_KEY || 'sara_dev_token_2026';
 
     before(async () => {
@@ -55,8 +56,8 @@ describe('API Endpoints (Sincronización SARA)', () => {
                 burdenType: 'mixed',
                 hasExternalSupport: true,
                 consentAccepted: true,
-                morningAnchor: '07:15',         // Setup ERP t0
-                timezone: 'Atlantic/Canary'     // Sincronización
+                morningAnchor: '07:15',
+                timezone: 'Atlantic/Canary'
             }),
             redirect: 'manual' 
         });
@@ -75,28 +76,31 @@ describe('API Endpoints (Sincronización SARA)', () => {
         const clinicalDoc = await CaretakerClinical.findOne({ externalId: generatedInternalId });
         assert.ok(clinicalDoc, 'El documento clínico debe existir en BBDD');
         
-        // Validación de Telemetría (Cronobiología)
+        generatedClinicalObjectId = clinicalDoc._id.toString(); // Capturamos el _id para el token EMA
+
         assert.strictEqual(clinicalDoc.morningAnchor, '07:15', 'Fallo en persistencia del Ancla Matutina');
         assert.strictEqual(clinicalDoc.timezone, 'Atlantic/Canary', 'Fallo en persistencia de Zona Horaria');
-        
-        // Validación de Inferencia Bayesiana (Distribución Beta Uniforme inicial)
         assert.strictEqual(clinicalDoc.bayesianParams.alpha, 1, 'El Prior de Homeostasis (alpha) debe ser 1');
         assert.strictEqual(clinicalDoc.bayesianParams.beta, 1, 'El Prior de Claudicación (beta) debe ser 1');
-        assert.strictEqual(clinicalDoc.bayesianParams.lastEnergyBaseline, null, 'El Baseline debe requerir calibración inicial (null)');
+        assert.strictEqual(clinicalDoc.bayesianParams.lastEnergyBaseline, null, 'El Baseline debe requerir calibración inicial');
     });
 
-    test('2. POST /ema -> Guardado con métricas de ultra-baja fricción', async () => {
-        assert.ok(generatedInternalId);
+    test('2. POST /ema/r/:token -> Guardado con métricas de ultra-baja fricción', async () => {
+        assert.ok(generatedClinicalObjectId);
 
-        const res = await fetch(`${baseUrl}/ema`, {
+        // Generamos el Magic Link tokenizado tal como haría el cron de WhatsApp
+        const token = authService.generateEmaToken(generatedClinicalObjectId);
+
+        // Atacamos el endpoint unificado pasándole el token en la URL (No usamos baseUrl porque esta ruta cuelga de /ema, no de /api)
+        const hostUrl = `http://localhost:${server.address().port}`;
+        
+        const res = await fetch(`${hostUrl}/ema/r/${token}`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'x-api-key': API_KEY 
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                externalId: generatedInternalId,
                 energy: 4,
                 tension: 2,
                 clarity: 3,
@@ -106,10 +110,11 @@ describe('API Endpoints (Sincronización SARA)', () => {
         
         assert.strictEqual(res.status, 200);
         const data = await res.json();
-        assert.strictEqual(data.status, 'ok');
+        assert.strictEqual(data.status, 'success');
+        assert.strictEqual(data.blindAck, true);
     });
 
-    test('3. GET /caretakers -> Recuperación y descifrado al vuelo (Audit Trail)', async () => {
+    test('3. GET /api/caretakers -> Recuperación y descifrado al vuelo (Audit Trail)', async () => {
         const res = await fetch(`${baseUrl}/caretakers`, {
             headers: { 'x-api-key': API_KEY }
         });
@@ -126,7 +131,7 @@ describe('API Endpoints (Sincronización SARA)', () => {
         assert.strictEqual(testUser.phoneReal, testPhoneNumber, 'El descifrado GCM del teléfono falló');
     });
 
-    test('4. DELETE /caretakers/:id -> Derecho al Olvido (Anonimización Irreversible)', async () => {
+    test('4. DELETE /api/caretakers/:id -> Derecho al Olvido (Anonimización Irreversible)', async () => {
         const res = await fetch(`${baseUrl}/caretakers/${generatedInternalId}`, {
             method: 'DELETE',
             headers: { 'x-api-key': API_KEY }
@@ -136,7 +141,6 @@ describe('API Endpoints (Sincronización SARA)', () => {
         const data = await res.json();
         assert.strictEqual(data.status, 'success');
 
-        // Verificamos que la identidad ya no existe
         const verifyRes = await fetch(`${baseUrl}/caretakers`, { headers: { 'x-api-key': API_KEY } });
         const verifyData = await verifyRes.json();
         const deletedUser = verifyData.data.find(u => u.externalId === generatedInternalId);

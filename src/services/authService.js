@@ -15,23 +15,16 @@ exports.hashPhoneNumber = (phone) => {
     return crypto.createHash('sha256').update(phone + SECRET).digest('hex').substring(0, 16);
 };
 
-exports.generateEmaToken = (patientId) => {
-    const expiresAt = Date.now() + (2 * 60 * 60 * 1000);
-    const data = `${patientId}:${expiresAt}`;
-    const hash = crypto.createHmac('sha256', SECRET).update(data).digest('hex');
-    return Buffer.from(`${data}:${hash}`).toString('base64url');
+exports.generateEmaToken = (clinicalId, isSimulated = false) => {
+    return jwt.sign({ clinicalId, isSimulated }, SECRET, { expiresIn: '2h' });
 };
 
 exports.verifyEmaToken = (token) => {
     try {
-        const decoded = Buffer.from(token, 'base64url').toString();
-        const [patientId, expiresAt, hash] = decoded.split(':');
-        if (Date.now() > parseInt(expiresAt)) return null;
-        const expectedHash = crypto.createHmac('sha256', SECRET)
-            .update(`${patientId}:${expiresAt}`)
-            .digest('hex');
-        return (hash === expectedHash) ? patientId : null;
-    } catch (e) { return null; }
+        return jwt.verify(token, SECRET);
+    } catch (e) { 
+        return null; 
+    }
 };
 
 exports.generateBlindIndex = (text) => {

@@ -1,8 +1,8 @@
-// tests\services\encryptionService.test.js
+// tests/encryptionService.test.js
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { encrypt, decrypt } = require('../../src/services/encryptionService');
+const { encrypt, decrypt } = require('../src/services/encryptionService');
 
 test('Servicio de Cifrado - Simetría AES-256-GCM', (t) => {
     const payload = 'dato_clinico_sensible_2027';

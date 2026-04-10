@@ -4,7 +4,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const emaController = require('../controllers/emaController');
+// const emaController = require('../controllers/emaController');
 const researcherController = require('../controllers/researcherController');
 const requireAuth = require('../middlewares/requireAuth');
 
@@ -22,7 +22,7 @@ const passiveAuth = (req, res, next) => {
 
 router.get('/ping', (req, res) => res.status(200).json({ status: 'ok' }));
 
-router.post('/ema', emaController.submitEma);
+// router.post('/ema', emaController.submitEma);
 
 router.post('/caretakers', passiveAuth, authController.registerCaretaker);
 router.get('/caretakers', authController.getAllCaretakers);
