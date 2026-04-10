@@ -15,6 +15,7 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
     let mockClinicalId;
     const mockExternalId = 'SARA-SIM-999';
     let validEmaToken;
+    let mockEmaEntryId;
 
     before(async () => {
         const mongoUri = process.env.MONGO_URI || `mongodb://localhost:27017/sara_test_${process.pid}`;
@@ -60,12 +61,22 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
     });
 
     test('1. Generación de enlace JITAI cifrado (Bypass Admin para Aislamiento Core)', async () => {
-        // Generamos el JWT directamente con el ObjectId de la Bóveda Clínica y flag de Simulación
-        validEmaToken = authService.generateEmaToken(mockClinicalId.toString(), true);
-        
-        assert.ok(validEmaToken, 'Debe generar el token');
-        assert.match(validEmaToken, /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/, 'El token debe cumplir el formato JWT');
+    // INYECCIÓN ON-DISPATCH: Instanciación simulada
+    const pendingEma = await EmaEntry.create({
+        patientId: mockClinicalId,
+        status: 'pending',
+        isSimulated: true,
+        dispatchedAt: new Date()
     });
+    
+    mockEmaEntryId = pendingEma._id;
+
+    // Generamos el JWT acoplando el documento específico
+    validEmaToken = authService.generateEmaToken(mockClinicalId.toString(), mockEmaEntryId.toString(), true);
+    
+    assert.ok(validEmaToken, 'Debe generar el token');
+    assert.match(validEmaToken, /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/, 'El token debe cumplir el formato JWT');
+});
 
     test('2. GET /ema/r/:token -> Renderizado Stateless del formulario', async () => {
         assert.ok(validEmaToken, 'Dependencia fallida');
@@ -115,21 +126,20 @@ describe('Flujo EMA: Tokens Efímeros, Zero-Friction y Aislamiento Científico',
     });
 
     test('5. Rechazo de Token Inválido o Modificado (Criptografía Activa)', async () => {
-        assert.ok(validEmaToken, 'Dependencia fallida');
-        // Corrompemos la firma del JWT
-        const tamperedToken = validEmaToken.substring(0, validEmaToken.length - 5) + 'xxxxx';
+    assert.ok(validEmaToken, 'Dependencia fallida');
+    const tamperedToken = validEmaToken.substring(0, validEmaToken.length - 5) + 'xxxxx';
 
-        const res = await fetch(`${baseUrl}/ema/r/${tamperedToken}`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Connection': 'close'
-            },
-            body: JSON.stringify({ energy: 5, tension: 1, clarity: 3, responseTimeMs: 4000 })
-        });
-        
-        const text = await res.text();
-        assert.strictEqual(res.status, 401);
-        assert.match(text, /inválido|caducado/i, 'Debe interceptar la firma corrupta del JWT');
+    const res = await fetch(`${baseUrl}/ema/r/${tamperedToken}`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Connection': 'close'
+        },
+        body: JSON.stringify({ energy: 5, tension: 1, clarity: 3, responseTimeMs: 4000 })
     });
+    
+    const text = await res.text();
+    assert.strictEqual(res.status, 401);
+    assert.match(text, /inválido|caducado/i, 'Debe interceptar la firma corrupta del JWT');
+});
 });

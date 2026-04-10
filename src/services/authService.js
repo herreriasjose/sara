@@ -15,8 +15,13 @@ exports.hashPhoneNumber = (phone) => {
     return crypto.createHash('sha256').update(phone + SECRET).digest('hex').substring(0, 16);
 };
 
-exports.generateEmaToken = (clinicalId, isSimulated = false) => {
-    return jwt.sign({ clinicalId, isSimulated }, SECRET, { expiresIn: '2h' });
+exports.generateEmaToken = (clinicalId, emaEntryId, isSimulated = false) => {
+    // Acoplamiento: El token pertenece única y exclusivamente a una instancia de EmaEntry
+    return jwt.sign({ 
+        clinicalId, 
+        emaEntryId, 
+        isSimulated 
+    }, SECRET, { expiresIn: '2h' });
 };
 
 exports.verifyEmaToken = (token) => {

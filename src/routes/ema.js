@@ -15,39 +15,54 @@ const verifyTokenMiddleware = (req, res, next) => {
     next();
 };
 
-router.get('/r/:token', verifyTokenMiddleware, (req, res) => {
-    res.render('pages/ema', { token: req.params.token });
+router.get('/r/:token', verifyTokenMiddleware, async (req, res) => {
+    try {
+        const { emaEntryId } = req.emaPayload;
+        
+        await EmaEntry.updateOne(
+            { _id: emaEntryId, status: 'pending', openedAt: { $exists: false } },
+            { $set: { openedAt: new Date() } }
+        );
+
+        res.render('pages/ema', { token: req.params.token });
+    } catch (error) {
+        res.status(500).send('Error de telemetría pasiva.');
+    }
 });
 
 router.post('/r/:token', verifyTokenMiddleware, async (req, res) => {
-    const { clinicalId, isSimulated } = req.emaPayload;
+    const { clinicalId, emaEntryId, isSimulated } = req.emaPayload;
     const { energy, tension, clarity, responseTimeMs } = req.body;
 
     try {
         const clinicalRecord = await CaretakerClinical.findById(clinicalId);
         if (!clinicalRecord) return res.status(404).json({ error: 'Contexto clínico no hallado.' });
 
-        const newEma = await EmaEntry.create({
-            patientId: clinicalRecord._id,
-            metrics: { 
-                energy: parseInt(energy, 10), 
-                tension: parseInt(tension, 10), 
-                clarity: parseInt(clarity, 10) 
-            },
-            responseTimeMs: parseInt(responseTimeMs, 10),
-            isSimulated: isSimulated || false
-        });
+        const emaRecord = await EmaEntry.findById(emaEntryId);
+        if (!emaRecord) return res.status(404).json({ error: 'Traza de telemetría no hallada.' });
+        if (emaRecord.status !== 'pending') return res.status(409).json({ error: 'Registro ya consolidado o expirado.' });
+
+        emaRecord.status = 'completed';
+        emaRecord.completedAt = new Date();
+        emaRecord.responseTimeMs = parseInt(responseTimeMs, 10);
+        emaRecord.metrics = { 
+            energy: parseInt(energy, 10), 
+            tension: parseInt(tension, 10), 
+            clarity: parseInt(clarity, 10) 
+        };
+
+        await emaRecord.save(); 
 
         if (isSimulated) {
             return res.status(200).json({ status: 'success', blindAck: true, simulated: true });
         }
 
         const priorProbability = Number(decrypt(clinicalRecord.lastBurnoutProbability));
-
         let prediction = null;
+
         try {
             prediction = await brainClient.getBurnoutPrediction({
-                metrics: newEma.metrics,
+                metrics: emaRecord.metrics,
                 priorProbability: priorProbability,
                 context: {
                     caregiver: { age: clinicalRecord.age, gender: clinicalRecord.gender },
@@ -59,7 +74,6 @@ router.post('/r/:token', verifyTokenMiddleware, async (req, res) => {
             console.error('[SARA-Gateway] Colapso Motor Inferencia:', brainError.message);
         }
 
-        // Si falla la inferencia, preservamos el Prior (Resiliencia sistémica)
         const posteriorProb = prediction?.posteriorProbability ?? prediction?.probability ?? priorProbability;
 
         await CaretakerClinical.findByIdAndUpdate(clinicalRecord._id, {
@@ -76,19 +90,19 @@ router.post('/r/:token', verifyTokenMiddleware, async (req, res) => {
 });
 
 router.get('/status/:id', requireAuth(['admin', 'researcher']), async (req, res) => {
-    try {
-        const query = mongoose.Types.ObjectId.isValid(req.params.id) 
-            ? { $or: [{ externalId: req.params.id }, { _id: req.params.id }] } 
-            : { externalId: req.params.id };
-        
-        const clinical = await CaretakerClinical.findOne(query).lean();
-        if (!clinical) return res.status(404).send('Identidad clínica no hallada.');
+try {
+const query = mongoose.Types.ObjectId.isValid(req.params.id)
+? { $or: [{ externalId: req.params.id }, { _id: req.params.id }] }
+: { externalId: req.params.id };
 
-        const entries = await EmaEntry.find({ patientId: clinical._id }).sort({ createdAt: -1 }).lean();
-        res.render('pages/caretaker-status', { clinical, entries });
-    } catch (error) {
-        res.status(500).send('Fallo de integridad al recuperar datos.');
-    }
+    const clinical = await CaretakerClinical.findOne(query).lean();
+    if (!clinical) return res.status(404).send('Identidad clínica no hallada.');
+
+    const entries = await EmaEntry.find({ patientId: clinical._id }).sort({ createdAt: -1 }).lean();
+    res.render('pages/caretaker-status', { clinical, entries });
+} catch (error) {
+    res.status(500).send('Fallo de integridad al recuperar datos.');
+}
 });
 
 module.exports = router;

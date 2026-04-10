@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const app = require('../src/server');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
 const authService = require('../src/services/authService'); // Inyectamos generador de tokens
+const EmaEntry = require('../src/models/EmaEntry');
 
 describe('API Endpoints (Sincronización SARA)', () => {
     let server;
@@ -85,34 +86,41 @@ describe('API Endpoints (Sincronización SARA)', () => {
         assert.strictEqual(clinicalDoc.bayesianParams.lastEnergyBaseline, null, 'El Baseline debe requerir calibración inicial');
     });
 
-    test('2. POST /ema/r/:token -> Guardado con métricas de ultra-baja fricción', async () => {
-        assert.ok(generatedClinicalObjectId);
+    // Reemplazar exclusivamente el Test 2:
+test('2. POST /ema/r/:token -> Guardado con métricas de ultra-baja fricción', async () => {
+    assert.ok(generatedClinicalObjectId);
 
-        // Generamos el Magic Link tokenizado tal como haría el cron de WhatsApp
-        const token = authService.generateEmaToken(generatedClinicalObjectId);
-
-        // Atacamos el endpoint unificado pasándole el token en la URL (No usamos baseUrl porque esta ruta cuelga de /ema, no de /api)
-        const hostUrl = `http://localhost:${server.address().port}`;
-        
-        const res = await fetch(`${hostUrl}/ema/r/${token}`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                energy: 4,
-                tension: 2,
-                clarity: 3,
-                responseTimeMs: 12000
-            })
-        });
-        
-        assert.strictEqual(res.status, 200);
-        const data = await res.json();
-        assert.strictEqual(data.status, 'success');
-        assert.strictEqual(data.blindAck, true);
+    // INYECCIÓN ON-DISPATCH: Instanciación del estado pending
+    const pendingEma = await EmaEntry.create({
+        patientId: generatedClinicalObjectId,
+        status: 'pending',
+        dispatchedAt: new Date()
     });
+
+    // Acoplamiento criptográfico estricto: (clinicalId, emaEntryId)
+    const token = authService.generateEmaToken(generatedClinicalObjectId, pendingEma._id.toString());
+
+    const hostUrl = `http://localhost:${server.address().port}`;
+    
+    const res = await fetch(`${hostUrl}/ema/r/${token}`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            energy: 4,
+            tension: 2,
+            clarity: 3,
+            responseTimeMs: 12000
+        })
+    });
+    
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.status, 'success');
+    assert.strictEqual(data.blindAck, true);
+});
 
     test('3. GET /api/caretakers -> Recuperación y descifrado al vuelo (Audit Trail)', async () => {
         const res = await fetch(`${baseUrl}/caretakers`, {

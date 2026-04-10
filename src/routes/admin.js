@@ -10,6 +10,8 @@ const CaretakerIdentity = require('../models/CaretakerIdentity');
 const requireAuth = require('../middlewares/requireAuth');
 const encryptionService = require('../services/encryptionService');
 const jwt = require('jsonwebtoken');
+const CaretakerClinical = require('../models/CaretakerClinical');
+const EmaEntry = require('../models/EmaEntry');
 
 const safeDecrypt = (val) => {
     if (!val) return '';
@@ -77,21 +79,36 @@ router.post('/ema/generate-token/:externalId', requireAuth(['admin']), async (re
     try {
         const { externalId } = req.params;
         
-        // Bloqueo de seguridad si el front filtra cadenas inválidas
         if (!externalId || externalId === 'undefined') {
             return res.status(400).json({ error: 'Identidad clínica no válida.' });
         }
 
+        const clinicalRecord = await CaretakerClinical.findOne({ externalId });
+        if (!clinicalRecord) {
+            return res.status(404).json({ error: 'Contexto clínico no hallado.' });
+        }
+
+        const pendingEma = await EmaEntry.create({
+            patientId: clinicalRecord._id,
+            status: 'pending',
+            isSimulated: true, 
+            dispatchedAt: new Date()
+        });
+
         const token = jwt.sign(
-            { externalId, role: 'caretaker', isSimulated: true },
+            { 
+                clinicalId: clinicalRecord._id, 
+                emaEntryId: pendingEma._id, 
+                isSimulated: true 
+            },
             process.env.JWT_SECRET || 'fallback_secret_development',
-            { expiresIn: '45m' }
+            { expiresIn: '2h' }
         );
         
-        // Alineación estricta con el montaje app.use('/ema', emaRoutes) de server.js
         res.status(200).json({ url: '/ema/r/' + token });
     } catch (error) {
-        res.status(500).json({ error: 'Fallo criptográfico en generación de enlace.' });
+        console.error('[SARA-Admin] Error inyección On-Dispatch:', error);
+        res.status(500).json({ error: 'Fallo criptográfico o de base de datos en generación de enlace.' });
     }
 });
 
