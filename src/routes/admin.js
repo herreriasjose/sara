@@ -88,11 +88,41 @@ router.post('/ema/generate-token/:externalId', requireAuth(['admin']), async (re
             return res.status(404).json({ error: 'Contexto clínico no hallado.' });
         }
 
+        const anchorParts = (clinicalRecord.morningAnchor || '08:30').split(':');
+        const anchorHour = parseInt(anchorParts[0], 10);
+        const anchorMinute = parseInt(anchorParts[1], 10);
+
+        const lastSimulatedEma = await EmaEntry.findOne({
+            patientId: clinicalRecord._id,
+            isSimulated: true
+        }).sort({ dispatchedAt: -1 });
+
+        let nextDispatchedAt = new Date();
+
+        if (!lastSimulatedEma) {
+            nextDispatchedAt.setHours(anchorHour, anchorMinute, 0, 0);
+        } else {
+            const lastDate = new Date(lastSimulatedEma.dispatchedAt);
+            const baseAnchorForLastDate = new Date(lastDate);
+            baseAnchorForLastDate.setHours(anchorHour, anchorMinute, 0, 0);
+
+            const diffHours = Math.round((lastDate.getTime() - baseAnchorForLastDate.getTime()) / (1000 * 60 * 60));
+
+            if (diffHours < 6) {
+                nextDispatchedAt = new Date(baseAnchorForLastDate.getTime() + 6 * 60 * 60 * 1000);
+            } else if (diffHours < 12) {
+                nextDispatchedAt = new Date(baseAnchorForLastDate.getTime() + 12 * 60 * 60 * 1000);
+            } else {
+                nextDispatchedAt = new Date(baseAnchorForLastDate);
+                nextDispatchedAt.setDate(nextDispatchedAt.getDate() + 1);
+            }
+        }
+
         const pendingEma = await EmaEntry.create({
             patientId: clinicalRecord._id,
             status: 'pending',
-            isSimulated: true, 
-            dispatchedAt: new Date()
+            isSimulated: true,
+            dispatchedAt: nextDispatchedAt
         });
 
         const token = jwt.sign(
@@ -166,5 +196,84 @@ router.post('/invitations/researcher', requireAuth(['admin']), async (req, res) 
         return res.status(500).json({ error: 'Fallo al generar el enlace de invitación.' });
     }
 });
+
+router.post('/ema/simulate-consumption/:externalId', requireAuth(['admin']), async (req, res) => {
+    try {
+        const { externalId } = req.params;
+        const clinicalRecord = await CaretakerClinical.findOne({ externalId });
+        
+        if (!clinicalRecord) {
+            return res.status(404).json({ error: 'Contexto clínico no hallado.' });
+        }
+
+        const pendingEntries = await EmaEntry.find({
+            patientId: clinicalRecord._id,
+            isSimulated: true,
+            status: 'pending'
+        });
+
+        if (pendingEntries.length === 0) {
+            return res.status(200).json({ message: 'No hay eventos simulados en espera.' });
+        }
+
+        const anchorParts = (clinicalRecord.morningAnchor || '08:30').split(':');
+        const anchorHour = parseInt(anchorParts[0], 10);
+        let consumedCount = 0;
+
+        for (const entry of pendingEntries) {
+            const dispatched = new Date(entry.dispatchedAt);
+            let hourDiff = dispatched.getHours() - anchorHour;
+            if (hourDiff < 0) hourDiff += 24;
+
+            // Cortafuegos conductual: 15% de probabilidad de omisión absoluta
+            const isOmission = Math.random() < 0.15;
+
+            if (isOmission) {
+                entry.status = 'expired';
+            } else {
+                entry.status = 'completed';
+                let delayMins, respMs, energy, tension, clarity;
+
+                if (hourDiff < 4) {
+                    // Turno Matutino: Homeostasis preservada
+                    delayMins = Math.floor(Math.random() * 15) + 1;
+                    respMs = Math.floor(Math.random() * 3500) + 2500;
+                    energy = Math.floor(Math.random() * 2) + 4; 
+                    tension = 1;
+                    clarity = 3;
+                } else if (hourDiff < 10) {
+                    // Turno Tarde: Fricción cognitiva
+                    delayMins = Math.floor(Math.random() * 45) + 15;
+                    respMs = Math.floor(Math.random() * 7000) + 8000;
+                    energy = 3;
+                    tension = 2;
+                    clarity = 2;
+                } else {
+                    // Turno Noche: Bradicinesia y déficit metabólico
+                    delayMins = Math.floor(Math.random() * 120) + 60;
+                    respMs = Math.floor(Math.random() * 20000) + 20000;
+                    energy = Math.floor(Math.random() * 2) + 1;
+                    tension = 3;
+                    clarity = 1;
+                }
+
+                const openedDate = new Date(dispatched.getTime() + delayMins * 60000);
+                entry.openedAt = openedDate;
+                entry.responseTimeMs = respMs;
+                entry.completedAt = new Date(openedDate.getTime() + respMs);
+                entry.metrics = { energy, tension, clarity };
+            }
+
+            await entry.save();
+            consumedCount++;
+        }
+
+        res.status(200).json({ message: `Resolución alostática completada: ${consumedCount} registros consumidos.` });
+    } catch (error) {
+        console.error('[SARA-Admin] Error en consumo simulado:', error);
+        res.status(500).json({ error: 'Fallo en la resolución de la máquina de estados.' });
+    }
+});
+
 
 module.exports = router;

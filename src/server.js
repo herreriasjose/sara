@@ -1,3 +1,5 @@
+// src\server.js
+
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -55,9 +57,13 @@ if (require.main === module) {
         .then(async () => {
             console.log('Conectado a MongoDB Atlas con éxito.');
             
-            // Sincronización destructiva de índices huérfanos para evitar colisiones 11000
+            // Sincronización destructiva: Esto eliminará físicamente el índice TTL de la BD
             await require('./models/Researcher').syncIndexes();
-            console.log('[SARA-DB] Índices sincronizados purgados.');
+            await require('./models/EmaEntry').syncIndexes();
+            console.log('[SARA-DB] Índices sincronizados y TTL purgados.');
+            
+            // Arranque del motor de vigilancia pasiva
+            require('./services/expirationWorker').startWorker();
             
             app.listen(PORT, () => console.log(`SARA-Gateway operando en el puerto ${PORT}`));
         })

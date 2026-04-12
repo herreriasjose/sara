@@ -37,6 +37,8 @@ body: `
                             <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Recepción</th>
+                                    <th>Apertura</th>
+                                    <th>Completado</th>
                                     <th>Energía</th>
                                     <th>Tensión</th>
                                     <th>Claridad</th>
@@ -47,22 +49,35 @@ body: `
                             <tbody>
                                 ${locals.entries && locals.entries.length > 0 ? 
                                     locals.entries.map(e => {
-                                        const date = new Date(e.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                        const dateDisp = e.dispatchedAt ? new Date(e.dispatchedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+                                        const tOpen = e.openedAt ? new Date(e.openedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+                                        const tComp = e.completedAt ? new Date(e.completedAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+                                        
                                         const simBadge = e.isSimulated ? '<span class="badge bg-warning text-dark me-1" title="Evento Simulado (Cortafuegos Activo)">SIMULADO</span>' : '';
-                                        const qualBadge = e.isHighQuality ? '<span class="badge bg-success">VÁLIDO</span>' : '<span class="badge bg-danger" title="Tiempo de respuesta fuera de umbral">DESCARTADO</span>';
+                                        
+                                        let statusBadge = '';
+                                        if (e.status === 'pending') {
+                                            statusBadge = '<span class="badge bg-secondary">EN ESPERA</span>';
+                                        } else if (e.status === 'expired') {
+                                            statusBadge = '<span class="badge bg-dark" title="Biomarcador: Omisión de respuesta">OMITIDO (ERP)</span>';
+                                        } else {
+                                            statusBadge = e.isHighQuality ? '<span class="badge bg-success">VÁLIDO</span>' : '<span class="badge bg-danger" title="Tiempo de respuesta fuera de umbral">DESCARTADO</span>';
+                                        }
                                         
                                         return '<tr>' +
-                                            '<td>' + date + '</td>' +
-                                            '<td class="fw-bold">' + e.metrics.energy + '/5</td>' +
-                                            '<td>' + e.metrics.tension + '/3</td>' +
-                                            '<td>' + e.metrics.clarity + '/3</td>' +
-                                            '<td>' + e.responseTimeMs + '</td>' +
-                                            '<td>' + simBadge + qualBadge + '</td>' +
+                                            '<td>' + dateDisp + '</td>' +
+                                            '<td>' + tOpen + '</td>' +
+                                            '<td>' + tComp + '</td>' +
+                                            '<td class="fw-bold">' + (e.metrics?.energy ? e.metrics.energy + '/5' : '—') + '</td>' +
+                                            '<td>' + (e.metrics?.tension ? e.metrics.tension + '/3' : '—') + '</td>' +
+                                            '<td>' + (e.metrics?.clarity ? e.metrics.clarity + '/3' : '—') + '</td>' +
+                                            '<td>' + (e.responseTimeMs ? e.responseTimeMs : '—') + '</td>' +
+                                            '<td>' + simBadge + statusBadge + '</td>' +
                                         '</tr>';
                                     }).join('') 
-                                : '<tr><td colspan="6" class="text-center text-muted py-4">No hay métricas alostáticas registradas.</td></tr>'}
+                                : '<tr><td colspan="8" class="text-center text-muted py-4">No hay métricas alostáticas registradas.</td></tr>'}
                             </tbody>
-                        </table>
+                    </table>
                     </div>
                 </div>
             </div>

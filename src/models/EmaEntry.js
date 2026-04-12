@@ -31,7 +31,6 @@ EmaEntrySchema.pre('save', async function() {
     }
 });
 
-// Índice TTL para la recolección de basura / expiración automática (2 horas)
-EmaEntrySchema.index({ dispatchedAt: 1 }, { expireAfterSeconds: 7200, partialFilterExpression: { status: 'pending' } });
+
 
 module.exports = mongoose.model('EmaEntry', EmaEntrySchema);

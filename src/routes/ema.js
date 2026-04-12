@@ -1,3 +1,5 @@
+// src\routes\ema.js
+
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -43,13 +45,35 @@ router.post('/r/:token', verifyTokenMiddleware, async (req, res) => {
         if (emaRecord.status !== 'pending') return res.status(409).json({ error: 'Registro ya consolidado o expirado.' });
 
         emaRecord.status = 'completed';
-        emaRecord.completedAt = new Date();
         emaRecord.responseTimeMs = parseInt(responseTimeMs, 10);
         emaRecord.metrics = { 
             energy: parseInt(energy, 10), 
             tension: parseInt(tension, 10), 
             clarity: parseInt(clarity, 10) 
         };
+
+        // Intercepción JITAI: Cálculo determinista de Latencias para Simulaciones
+        if (isSimulated) {
+            const dispTime = emaRecord.dispatchedAt ? emaRecord.dispatchedAt.getTime() : Date.now();
+            const dispHour = emaRecord.dispatchedAt ? emaRecord.dispatchedAt.getHours() : 8;
+            
+            let attentionDelayMin = 0;
+            // Ponderación circadiana de la Latencia de Atención
+            if (dispHour >= 6 && dispHour < 12) {
+                attentionDelayMin = Math.floor(Math.random() * 15) + 1;       // Mañana: 1-15 min
+            } else if (dispHour >= 12 && dispHour < 18) {
+                attentionDelayMin = Math.floor(Math.random() * 45) + 15;      // Tarde: 15-60 min
+            } else {
+                attentionDelayMin = Math.floor(Math.random() * 120) + 60;     // Noche: 60-180 min
+            }
+            
+            const simulatedOpenedAt = dispTime + (attentionDelayMin * 60 * 1000);
+            emaRecord.openedAt = new Date(simulatedOpenedAt);
+            emaRecord.completedAt = new Date(simulatedOpenedAt + emaRecord.responseTimeMs);
+        } else {
+            // Flujo Ecológico Real
+            emaRecord.completedAt = new Date();
+        }
 
         await emaRecord.save(); 
 
