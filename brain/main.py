@@ -1,10 +1,9 @@
 import logging
 import os
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from typing import Optional
+from schemas import EmaInferencePayload
+from engine.bayesian import update_allostatic_state
 
-# 1. Configuración de Logs (Fricción Cero)
 os.makedirs("../logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -16,37 +15,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger("SARA-Brain")
 
-# 2. Inicialización
-app = FastAPI(title="SARA-Brain", version="1.0.0", description="Motor de Inferencia Bayesiana")
+app = FastAPI(title="SARA-Brain", version="1.0.0", description="Motor de Inferencia Bayesiana JITAI")
 
-# 3. Contrato de Datos (McEwen ERP)
-class EmaMetrics(BaseModel):
-    energy: int = Field(..., ge=1, le=5, description="Nivel de Batería (1-5)")
-    tension: int = Field(..., ge=1, le=3, description="Nivel de Agobio/Saturación (1-3)")
-    clarity: int = Field(..., ge=1, le=3, description="Claridad Mental (1-3)")
-    previous_probability: Optional[float] = Field(0.1, ge=0.0, le=1.0, description="P(H) Previa")
-
-# 4. Endpoints
 @app.get("/health")
 async def health_check():
-    logger.info("Health check solicitado por el Gateway.")
-    return {"status": "alive", "engine": "Bayesian-McEwen-v1"}
+    return {"status": "alive", "engine": "Bayesian-Beta-Distribution-v4"}
 
 @app.post("/predict")
-async def predict_burnout(metrics: EmaMetrics):
+async def predict_burnout(payload: EmaInferencePayload):
     try:
-        logger.info(f"Procesando métricas de Carga Alostática: {metrics.model_dump()}")
+        new_alpha, new_beta, posterior = update_allostatic_state(payload)
         
-        # Lógica de Inferencia Bayesiana Simplificada (Energy Resistance Principle)
-        likelihood_factor = metrics.tension / metrics.energy
-        posterior = (metrics.previous_probability * likelihood_factor) / 1.5
-        final_prob = min(max(posterior, 0.0), 1.0)
+        # Umbral JITAI establecido en 0.8 según arquitectura SARA
+        status = "alert" if posterior > 0.8 else "stable"
         
-        status = "alert" if final_prob > 0.7 else "stable"
-        logger.info(f"Predicción completada: P(H|E) = {final_prob:.4f} | Estado: {status}")
+        # TRAZABILIDAD CLÍNICA (Sismógrafo Alostático)
+        logger.info(f"ID: {payload.external_id} | CINÉTICA ALOSTÁTICA | Prior: {payload.bayesian_state.prior_probability} -> Posterior: {posterior} | "
+                    f"Beta({new_alpha}, {new_beta}) | "
+                    f"Latencias(LA: {payload.latencies.attention_ms}ms, LR: {payload.latencies.resolution_ms}ms) | "
+                    f"Calidad: {payload.latencies.is_high_quality}")
         
         return {
-            "probability": round(final_prob, 4),
+            "probability": posterior,
+            "alpha": new_alpha,
+            "beta": new_beta,
             "status": status
         }
     except Exception as e:

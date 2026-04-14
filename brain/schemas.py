@@ -1,10 +1,27 @@
-# brain\schemas.py
+# brain/schemas.py
 
 from pydantic import BaseModel, Field
 from typing import Optional
 
-class EmaMetrics(BaseModel):
-    energy: int = Field(..., ge=1, le=5, description="Nivel de Batería (1-5)")
-    tension: int = Field(..., ge=1, le=3, description="Nivel de Agobio/Saturación (1-3)")
-    clarity: int = Field(..., ge=1, le=3, description="Claridad Mental (1-3)")
-    previous_probability: Optional[float] = Field(0.1, ge=0.0, le=1.0, description="P(H) Previa")
+class BayesianState(BaseModel):
+    alpha: float = Field(..., ge=0.0, description="Acumulado de Resiliencia")
+    beta: float = Field(..., ge=0.0, description="Acumulado de Desgaste Alostático")
+    prior_probability: float = Field(..., ge=0.0, le=1.0, description="P(H) Previa")
+
+class EmaLatencies(BaseModel):
+    attention_ms: int = Field(..., description="Latencia de Atención (LA) en ms")
+    resolution_ms: int = Field(..., description="Latencia de Resolución (LR) en ms")
+    is_high_quality: bool = Field(..., description="Filtro de automatismo/ruido")
+
+class EmaContext(BaseModel):
+    caregiver_age: Optional[int] = None
+    burden_type: Optional[str] = None
+
+class EmaInferencePayload(BaseModel):
+    external_id: str = Field(..., description="ID Anonimizado (Hash SHA-256)")
+    energy: int = Field(..., ge=1, le=5)
+    tension: int = Field(..., ge=1, le=3)
+    clarity: int = Field(..., ge=1, le=3)
+    latencies: EmaLatencies
+    bayesian_state: BayesianState
+    context: Optional[EmaContext] = None
