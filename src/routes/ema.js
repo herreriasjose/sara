@@ -5,6 +5,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const EmaEntry = require('../models/EmaEntry');
 const CaretakerClinical = require('../models/CaretakerClinical');
+const CaretakerIdentity = require('../models/CaretakerIdentity'); // Inyección arquitectónica
 const requireAuth = require('../middlewares/requireAuth');
 const { verifyEmaToken } = require('../services/authService');
 const emaController = require('../controllers/emaController');
@@ -43,11 +44,19 @@ router.get('/status/:id', requireAuth(['admin', 'researcher']), async (req, res)
         const clinical = await CaretakerClinical.findOne(query).lean();
         if (!clinical) return res.status(404).send('Identidad clínica no hallada.');
 
+        // FUSIÓN DE BÓVEDAS (CORREGIDA): Búsqueda resiliente usando el parámetro de la petición
+        const identity = await CaretakerIdentity.findOne(query).lean();
+        
+        // Transformación explícita a booleano (doble negación)
+        clinical.isSubjectOfTest = identity ? !!identity.isSubjectOfTest : false;
+
         const entries = await EmaEntry.find({ patientId: clinical._id }).sort({ createdAt: -1 }).lean();
+        
         res.render('pages/caretaker-status', { clinical, entries });
     } catch (error) {
+        console.error('Error en enrutamiento de estatus clínico:', error);
         res.status(500).send('Fallo de integridad al recuperar datos.');
     }
 });
 
-module.exports = router; 
+module.exports = router;

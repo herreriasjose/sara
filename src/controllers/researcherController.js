@@ -2,8 +2,10 @@
 
 const Researcher = require('../models/Researcher');
 const { decrypt } = require('../services/encryptionService');
-// const Caretaker = require('../models/Caretaker');
+const { encrypt } = require('../services/encryptionService');
 const InvitationCaretakerToken = require('../models/InvitationCaretakerToken');
+const CaretakerClinical = require('../models/CaretakerClinical');
+const brainClient = require('../services/brainClient');
 
 exports.generateCaretakerInvitation = async (req, res) => {
     try {
@@ -76,3 +78,67 @@ exports.getAllResearchers = async (req, res) => {
 //         return res.status(500).json({ error: 'Fallo en la reasignación de cohorte.' });
 //     }
 // };
+
+exports.syncAlostaticInference = async (req, res) => {
+    try {
+        const { externalId } = req.params;
+        const clinical = await CaretakerClinical.findOne({ externalId });
+        
+        if (!clinical) return res.status(404).json({ error: 'Caretaker no hallado' });
+
+        const alpha = clinical.bayesianParams.alpha || 1;
+        const beta = clinical.bayesianParams.beta || 1;
+        const priorProb = Number((alpha / (alpha + beta)).toFixed(4));
+
+        // Cálculo de inacción (Silencio Alostático)
+        const now = Date.now();
+        const lastInteraction = clinical.lastInteractionAt ? new Date(clinical.lastInteractionAt).getTime() : new Date(clinical.updatedAt).getTime();
+        const silenceMs = now - lastInteraction;
+        const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
+        // Bypass de Fricción Cero: Si no hay omisión crítica, no gastamos CPU en Python
+        if (silenceMs < TWO_HOURS_MS) {
+            return res.status(200).json({ alpha, beta, probability: priorProb });
+        }
+
+        // Inyección del Vector Límite de Estrés (ERP - Omission)
+        const payload = {
+            external_id: externalId,
+            energy: 1,  // Límite inferior de resiliencia
+            tension: 3, // Límite superior de desgaste
+            clarity: 1, 
+            latencies: {
+                attention_ms: silenceMs,
+                resolution_ms: 0,
+                is_high_quality: true // True para forzar asimilación en el motor bayesiano
+            },
+            bayesian_state: {
+                alpha: alpha,
+                beta: beta,
+                prior_probability: priorProb
+            }
+        };
+
+        const prediction = await brainClient.getBurnoutPrediction(payload);
+
+        if (!prediction) throw new Error('SARA-Brain timeout o error interno');
+
+        // Actualización de la bóveda clínica
+        clinical.bayesianParams.alpha = prediction.new_alpha;
+        clinical.bayesianParams.beta = prediction.new_beta;
+        clinical.lastBurnoutProbability = encrypt(prediction.probability.toString());
+        clinical.lastInteractionAt = new Date(); // Reseteo del contador tras la penalización
+        
+        await clinical.save();
+
+        return res.status(200).json({
+            alpha: prediction.new_alpha,
+            beta: prediction.new_beta,
+            probability: prediction.probability
+        });
+
+    } catch (error) {
+        console.error('[Inferencia Sync] Colapso:', error.message);
+        return res.status(503).json({ error: 'Servicio de Inferencia Degradado' });
+    }
+};

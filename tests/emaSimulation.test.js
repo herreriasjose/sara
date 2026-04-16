@@ -5,11 +5,12 @@ const { createServer } = require('node:http');
 const mongoose = require('mongoose');
 const app = require('../src/server');
 const CaretakerClinical = require('../src/models/CaretakerClinical');
+const CaretakerIdentity = require('../src/models/CaretakerIdentity');
 const EmaEntry = require('../src/models/EmaEntry');
-const authService = require('../src/services/authService'); // Usado para firmar admin si es necesario
+const authService = require('../src/services/authService');
 const { encrypt } = require('../src/services/encryptionService');
 
-describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA', () => {
+describe('Simulación JITAI y ERP: Desplazamiento Circadiano y Bóveda Segregada', () => {
     let server;
     let baseUrl;
     let mockClinicalId;
@@ -17,7 +18,6 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
     const anchorHour = 7;
     const anchorMinute = 30;
   
-    
     let adminAuthCookie = ''; 
 
     before(async () => {
@@ -26,11 +26,11 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
             await mongoose.connect(mongoUri);
         }
         await CaretakerClinical.deleteMany({});
+        await CaretakerIdentity.deleteMany({});
         await EmaEntry.deleteMany({});
 
         mockClinicalId = new mongoose.Types.ObjectId();
 
-        // Inyección de paciente con Ancla Matutina a las 07:30
         await CaretakerClinical.collection.insertOne({
             _id: mockClinicalId,
             externalId: mockExternalId,
@@ -40,7 +40,6 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
             lastBurnoutProbability: encrypt(0.1)
         });
 
-        // Setup del servidor
         server = createServer(app);
         await new Promise((resolve) => {
             server.listen(0, () => {
@@ -49,7 +48,6 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
             });
         });
 
-        // INYECCIÓN DE SESIÓN: Firmamos un JWT válido para el rol Admin
         const mockAdminId = new mongoose.Types.ObjectId();
         const adminToken = authService.generateSessionToken(mockAdminId.toString(), 'admin');
         adminAuthCookie = `sara_session=${adminToken}`;
@@ -75,13 +73,8 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
             }
         });
         
-        // 1. Consumimos el buffer de red una sola vez
         const responseText = await res.text();
-        
-        // 2. Evaluamos usando la variable en memoria
         assert.strictEqual(res.status, 200, `Rechazo del servidor: ${responseText}`);
-        
-        // 3. Parseamos el texto ya descargado
         return JSON.parse(responseText);
     };
 
@@ -117,7 +110,6 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
     });
 
     test('4. Cuarto Turno (Reinicio Circadiano): dispatchedAt = 07:30 de mañana (+24h)', async () => {
-        // Almacenamos el día del tercer turno para comparar
         const prevEntry = await EmaEntry.findOne({ patientId: mockClinicalId }).sort({ dispatchedAt: -1 });
         const prevDate = new Date(prevEntry.dispatchedAt).getDate();
 
@@ -126,12 +118,44 @@ describe('Simulación JITAI y ERP: Desplazamiento Circadiano de Formularios EMA'
         const currentEntry = await EmaEntry.findOne({ patientId: mockClinicalId }).sort({ dispatchedAt: -1 });
         const currentDispatched = new Date(currentEntry.dispatchedAt);
         
-        // Validamos salto de día
         const expectedNextDay = new Date(prevEntry.dispatchedAt);
         expectedNextDay.setDate(expectedNextDay.getDate() + 1);
         
         assert.strictEqual(currentDispatched.getDate(), expectedNextDay.getDate(), 'Debe saltar al día siguiente tras el tercer turno');
         assert.strictEqual(currentDispatched.getHours(), anchorHour, 'Debe resetearse a la hora del ancla');
         assert.strictEqual(currentDispatched.getMinutes(), anchorMinute, 'Debe resetearse a los minutos del ancla');
+    });
+
+    test('5. Segregación de Bóvedas (Vault): Fusión en caliente del Sandbox para cohorte de control', async () => {
+        await CaretakerIdentity.collection.insertOne({
+            externalId: mockExternalId,
+            isSubjectOfTest: true
+        });
+
+        const res = await fetch(`${baseUrl}/ema/status/${mockExternalId}`, {
+            headers: { 'Cookie': adminAuthCookie }
+        });
+        const html = await res.text();
+
+        assert.strictEqual(res.status, 200);
+        // Aserción fuerte: validamos la presencia del ID funcional en el DOM en lugar de textos estéticos
+        assert.match(html, /id="btn-simulate-ema"/);
+        assert.match(html, /data-endpoint="\/admin\/ema\/generate-token"/);
+    });
+
+    test('6. Privacidad por Diseño (Control de Calidad ERP): Ocultación del Sandbox en cohorte clínica real', async () => {
+        await CaretakerIdentity.updateOne(
+            { externalId: mockExternalId },
+            { $set: { isSubjectOfTest: false } }
+        );
+
+        const res = await fetch(`${baseUrl}/ema/status/${mockExternalId}`, {
+            headers: { 'Cookie': adminAuthCookie }
+        });
+        const html = await res.text();
+
+        assert.strictEqual(res.status, 200);
+        // Aserción fuerte negativa: confirmamos la ausencia absoluta del botón interactivo
+        assert.doesNotMatch(html, /id="btn-simulate-ema"/);
     });
 });

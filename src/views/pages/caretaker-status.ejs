@@ -1,15 +1,56 @@
-
-<!-- src\views\pages\caretaker-status.ejs -->
-
 <% 
-  // 1. Pre-procesamiento de datos (Capa de Preparación)
-  // Resolvemos el conflicto de tags anidados serializando el JSON antes de la inyección en el layout.
   const chartData = JSON.stringify(locals.entries.slice(0, 20).reverse().map(e => ({
     label: e.dispatchedAt ? new Date(e.dispatchedAt).toLocaleDateString("es-ES", {day:"2-digit", month:"2-digit"}) : "—",
     energy: e.metrics?.energy || 0,
     tension: e.metrics?.tension || 0,
     clarity: e.metrics?.clarity || 0
   })));
+
+  let sandboxUI = '';
+if (locals.clinical && locals.clinical.isSubjectOfTest) {
+    sandboxUI = `
+    <div class="card mt-3 mb-3 shadow-sm border-warning bg-light">
+        <div class="card-body p-3">
+            <h6 class="card-title text-dark fw-bold mb-3 border-bottom border-warning pb-2" style="font-size: 0.85rem;">Sujeto de TEST</h6>
+            
+            <div class="row g-3">
+                <div class="col-md-4 border-end border-warning-subtle">
+                    <div class="d-grid">
+                        <button id="btn-simulate-ema" 
+                                class="btn btn-warning btn-sm fw-bold shadow-sm"
+                                data-external-id="${locals.clinical.externalId}"
+                                data-endpoint="/admin/ema/generate-token">
+                            Simular Formulario EMA
+                        </button>
+                    </div>
+                    <p class="text-muted mb-0 mt-2" style="font-size: 0.7rem; line-height: 1.2;">
+                        * Generación de token efímero para forzar la inyección de input y la actualización de P(H|E).
+                    </p>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-secondary btn-sm fw-bold shadow-sm" disabled title="Implementación en siguiente fase">
+                            Disparar Intervención JITAI
+                        </button>
+                    </div>
+                    <p class="text-muted mb-0 mt-2" style="font-size: 0.7rem; line-height: 1.2;">
+                        * [Próximamente] Fuerza la ejecución del micro-apoyo vía Twilio para testeo de latencia SMS.
+                        </p>
+                    </div>
+
+                <div class="col-md-4 border-end border-warning-subtle">
+                    <div class="d-grid">
+                        
+                    </div>
+                    <p class="text-muted mb-0 mt-2" style="font-size: 0.7rem; line-height: 1.2;">
+                        
+                    </p>
+                </div>
+                </div>
+            </div>
+        </div>`;
+    }
 %>
 
 <%- include('../layouts/main', {
@@ -24,17 +65,38 @@ body: `
         <a href="/admin" class="btn btn-outline-dark btn-sm shadow-sm">← Volver al Panel</a>
     </div>
 
+    ${sandboxUI}
+
     <div class="row g-4 text-start">
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-0 bg-white">
-                <div class="card-body">
-                    <h5 class="card-title text-primary border-bottom pb-2">Métricas Base (ERP)</h5>
-                    <ul class="list-unstyled mt-3 small">
+                <div class="card-body" 
+                     id="alostatic-monitor"
+                     data-alpha="${locals.clinical.bayesianParams?.alpha || 1}"
+                     data-beta="${locals.clinical.bayesianParams?.beta || 1}">
+                    
+                    <h5 class="card-title text-primary border-bottom pb-2">Cinética de Carga Alostática</h5>
+                    
+                    <div class="mt-3 text-center">
+                        <h2 id="burnout-display" class="fw-bold text-dark">--%</h2>
+                        <span id="risk-label" class="badge bg-secondary">Calculando...</span>
+                    </div>
+
+                    <div class="progress mt-3" style="height: 10px;">
+                        <div id="alostatic-gauge" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+
+                    <ul class="list-unstyled mt-4 small">
                         <li class="mb-2"><strong>Racha (Streak):</strong> ${locals.clinical.streakCount}</li>
-                        <li class="mb-2"><strong>Probabilidad Burnout:</strong> ${((locals.clinical.lastBurnoutProbability || 0.5) * 100).toFixed(1)}%</li>
                         <li class="mb-2"><strong>Última Interacción:</strong> ${locals.clinical.lastInteractionAt ? new Date(locals.clinical.lastInteractionAt).toLocaleString('es-ES') : 'N/A'}</li>
                         <li class="mb-2"><strong>Ancla Matutina:</strong> <span class="badge bg-info text-dark">${locals.clinical.morningAnchor || 'No definida'}</span></li>
                     </ul>
+
+                    <button id="btn-sync-brain" 
+                            class="btn btn-outline-primary btn-sm w-100 mt-2 shadow-sm"
+                            data-external-id="${locals.clinical.externalId}">
+                        Sincronizar Inferencia P(H|E)
+                    </button>
                 </div>
             </div>
         </div>
@@ -58,7 +120,7 @@ body: `
                                 ${locals.entries && locals.entries.length > 0 ? 
                                     locals.entries.map(e => {
                                         const dateDisp = e.dispatchedAt ? new Date(e.dispatchedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
-                                        const simBadge = e.isSimulated ? '<span class="badge bg-warning text-dark me-1">SIM</span>' : '';
+                                        const simBadge = e.isSimulated ? '<span class="badge bg-warning text-dark me-1">SIMULADO</span>' : '';
                                         
                                         let statusBadge = '';
                                         if (e.status === 'pending') statusBadge = '<span class="badge bg-secondary">ESPERA</span>';
@@ -86,7 +148,7 @@ body: `
         <div class="col-12">
             <div class="card shadow-sm border-0 bg-white">
                 <div class="card-body">
-                    <h5 class="card-title text-primary border-bottom pb-2">Cinética de Carga Alostática</h5>
+                    <h5 class="card-title text-primary border-bottom pb-2">Cinética de Carga Alostática (Histórico)</h5>
                     <div style="height: 350px; position: relative;">
                         <canvas id="emaEvolutionChart" data-series='${chartData}'></canvas>
                     </div>
@@ -158,6 +220,109 @@ body: `
         } else {
             initChart();
         }
+    })();
+
+    (function() {
+        const Monitor = {
+            init() {
+                this.container = document.getElementById('alostatic-monitor');
+                this.btnSync = document.getElementById('btn-sync-brain');
+                if (!this.container || !this.btnSync) return;
+
+                this.renderProbability();
+                this.btnSync.addEventListener('click', this.handleSync.bind(this));
+            },
+
+            renderProbability() {
+                const alpha = parseFloat(this.container.dataset.alpha);
+                const beta = parseFloat(this.container.dataset.beta);
+                const mu = alpha / (alpha + beta);
+                
+                const percentage = (mu * 100).toFixed(1);
+                let riskClass = 'bg-success';
+                let riskText = 'ESTABLE';
+
+                if (mu >= 0.8) { riskClass = 'bg-danger'; riskText = 'CRÍTICO (JITAI REQUERIDO)'; }
+                else if (mu >= 0.5) { riskClass = 'bg-warning text-dark'; riskText = 'DÉFICIT ENERGÉTICO'; }
+
+                document.getElementById('burnout-display').innerText = percentage + '%';
+                document.getElementById('alostatic-gauge').style.width = percentage + '%';
+                document.getElementById('alostatic-gauge').className = 'progress-bar ' + riskClass;
+                
+                const riskLabel = document.getElementById('risk-label');
+                riskLabel.className = 'badge ' + riskClass;
+                riskLabel.innerText = riskText;
+            },
+
+            async handleSync(e) {
+                const btn = e.currentTarget;
+                const externalId = btn.dataset.externalId;
+                const originalText = btn.innerText;
+
+                try {
+                    btn.innerText = 'Calculando Prior...';
+                    btn.disabled = true;
+
+                    const response = await fetch('/api/v4/inference/' + externalId + '/sync', { method: 'POST' });
+                    if (!response.ok) throw new Error('Fallo en gateway');
+
+                    const data = await response.json();
+                    
+                    this.container.dataset.alpha = data.alpha;
+                    this.container.dataset.beta = data.beta;
+                    this.renderProbability();
+
+                } catch (error) {
+                    console.error('Error de Inferencia:', error);
+                    alert('SARA-Brain inalcanzable. Verifique logs.');
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => Monitor.init());
+        } else {
+            Monitor.init();
+        }
+    })();
+
+    (function() {
+        const SimControl = {
+            init() {
+                this.btn = document.getElementById('btn-simulate-ema');
+                if (!this.btn) return;
+                this.btn.addEventListener('click', this.execute.bind(this));
+            },
+            async execute() {
+                const endpoint = this.btn.dataset.endpoint;
+                const externalId = this.btn.dataset.externalId;
+                const originalText = this.btn.innerText;
+                
+                this.btn.disabled = true;
+                this.btn.innerText = 'Cifrando...';
+                
+                try {
+                    const response = await fetch(endpoint + '/' + externalId, { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (response.ok && data.url) {
+                        window.open(data.url, '_blank', 'noopener,noreferrer');
+                    } else {
+                        throw new Error(data.error || 'Rechazo del Gateway');
+                    }
+                } catch (error) {
+                    console.error('Fallo en Sandbox:', error);
+                    alert('Error en simulación: ' + error.message);
+                } finally {
+                    this.btn.disabled = false;
+                    this.btn.innerText = originalText;
+                }
+            }
+        };
+        document.addEventListener('DOMContentLoaded', () => SimControl.init());
     })();
 </script>
 ` }) %>
