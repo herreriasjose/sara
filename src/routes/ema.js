@@ -19,15 +19,19 @@ const verifyTokenMiddleware = (req, res, next) => {
 
 router.get('/r/:token', verifyTokenMiddleware, async (req, res) => {
     try {
-        const { emaEntryId } = req.emaPayload;
+        const { emaEntryId, isSimulated } = req.emaPayload; // ¡Importante extraer isSimulated!
         
         await EmaEntry.updateOne(
             { _id: emaEntryId, status: 'pending', openedAt: { $exists: false } },
             { $set: { openedAt: new Date() } }
         );
 
-        res.render('pages/ema', { token: req.params.token });
+        res.render('pages/ema', { 
+            token: req.params.token, 
+            isSimulated: !!isSimulated // Aseguramos booleano para el layout
+        });
     } catch (error) {
+        console.error(error);
         res.status(500).send('Error de telemetría pasiva.');
     }
 });

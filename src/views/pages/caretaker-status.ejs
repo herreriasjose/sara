@@ -112,7 +112,8 @@ body: `
                                     <th>Recepción</th>
                                     <th>Energía</th>
                                     <th>Tensión</th>
-                                    <th>Respuesta (ms)</th>
+                                    <th>Atención (LA)</th>
+                                    <th>Respuesta (LR)</th>
                                     <th>Trazabilidad</th>
                                 </tr>
                             </thead>
@@ -120,6 +121,19 @@ body: `
                                 ${locals.entries && locals.entries.length > 0 ? 
                                     locals.entries.map(e => {
                                         const dateDisp = e.dispatchedAt ? new Date(e.dispatchedAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+                                        
+                                        // Cálculo de Latencia de Atención (LA)
+                                        const latAt = (e.openedAt && e.dispatchedAt) ? (new Date(e.openedAt) - new Date(e.dispatchedAt)) : null;
+                                        let latAtStr = '—';
+                                        let latAtClass = '';
+                                        
+                                        if (latAt !== null) {
+                                            const mins = (latAt / 60000).toFixed(1);
+                                            latAtStr = mins + 'm';
+                                            // Resaltado si supera el umbral de penalización ERP (10 min)
+                                            if (mins >= 10) latAtClass = 'text-danger fw-bold';
+                                        }
+
                                         const simBadge = e.isSimulated ? '<span class="badge bg-warning text-dark me-1">SIMULADO</span>' : '';
                                         
                                         let statusBadge = '';
@@ -131,11 +145,12 @@ body: `
                                             '<td>' + dateDisp + '</td>' +
                                             '<td class="fw-bold">' + (e.metrics?.energy || '—') + '/5</td>' +
                                             '<td>' + (e.metrics?.tension || '—') + '/3</td>' +
-                                            '<td>' + (e.responseTimeMs || '—') + '</td>' +
+                                            '<td class="' + latAtClass + '">' + latAtStr + '</td>' +
+                                            '<td>' + (e.responseTimeMs ? (e.responseTimeMs / 1000).toFixed(1) + 's' : '—') + '</td>' +
                                             '<td>' + simBadge + statusBadge + '</td>' +
                                         '</tr>';
                                     }).join('') 
-                                : '<tr><td colspan="5" class="text-center text-muted py-4">Sin registros.</td></tr>'}
+                                : '<tr><td colspan="6" class="text-center text-muted py-4">Sin registros.</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -189,6 +204,7 @@ body: `
                             borderColor: '#dc3545',
                             borderDash: [5, 5],
                             tension: 0.4,
+                            fill: false,
                             pointStyle: 'rectRot',
                             pointRadius: 5
                         }

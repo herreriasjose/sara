@@ -1,5 +1,3 @@
-<!-- src\views\pages\ema.ejs -->
-
 <%- include('../layouts/main', { 
     title: 'SARA | Formulario de Monitorización (EMA)', 
     body: `
@@ -47,6 +45,16 @@
                         </div>
                     </div>
 
+                    ${ locals.isSimulated ? `
+                        <div class="mb-4 p-3 bg-warning-subtle border border-warning rounded shadow-sm">
+                            <label class="form-label fw-bold text-dark small">🕒 Simulador de Latencia de Apertura del enlace recibido (Minutos)</label>
+                            <input type="number" name="simulatedAttentionMins" class="form-control form-control-sm fw-bold" value="0" min="0" max="1440">
+                            <div class="form-text text-dark" style="font-size: 0.65rem;">
+                                Inyecta un retraso manual para testear la penalización en Beta (V4).
+                            </div>
+                        </div>
+                    ` : '' }
+
                     <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 shadow-sm mt-3">
                         Enviar Registro
                     </button>
@@ -60,6 +68,7 @@
     <style>
         .custom-slider { height: 2.5rem; }
         .btn-group .btn { padding: 1rem 0.5rem; font-weight: bold; }
+        .bg-warning-subtle { background-color: #fff3cd; }
     </style>
 
     <script>
@@ -83,7 +92,8 @@
                     energy: form.energy.value,
                     tension: form.querySelector('input[name="tension"]:checked').value,
                     clarity: form.querySelector('input[name="clarity"]:checked').value,
-                    responseTimeMs: Date.now() - startTime
+                    responseTimeMs: Date.now() - startTime,
+                    simulatedAttentionMins: form.simulatedAttentionMins ? form.simulatedAttentionMins.value : null
                 };
 
                 try {
@@ -95,17 +105,20 @@
 
                     if (response.ok) {
                         form.style.display = 'none';
-                        statusAlert.innerText = 'Registro procesado. Ventana cerrada.';
+                        statusAlert.innerText = 'Registro procesado.';
                         statusAlert.className = 'mt-3 text-center small fw-bold text-success';
+                        statusAlert.classList.remove('d-none');
                     } else {
-                        throw new Error('Validación rechazada');
+                        throw new Error('Error en el servidor');
                     }
                 } catch (error) {
                     submitBtn.disabled = false;
-                    statusAlert.innerText = 'Enlace caducado o error de red.';
+                    statusAlert.innerText = 'Error al enviar.';
                     statusAlert.className = 'mt-3 text-center small fw-bold text-danger';
+                    statusAlert.classList.remove('d-none');
                 }
             });
         });
     </script>
-` }) %>
+    `
+}) %>
